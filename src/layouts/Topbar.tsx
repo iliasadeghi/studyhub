@@ -1,0 +1,68 @@
+import { Link } from 'react-router-dom';
+import { Moon, Plus, Search, Sun } from 'lucide-react';
+import { useUIStore } from '@/stores/uiStore';
+import { useSettingsStore } from '@/stores/settingsStore';
+import { useResolvedTheme } from '@/hooks/useTheme';
+import { Avatar, Kbd } from '@/components/ui/Misc';
+import { IconButton } from '@/components/ui/Button';
+import { centerOf, switchTheme } from '@/utils/themeTransition';
+import { Logo } from './Logo';
+
+export function Topbar() {
+  const setCommandOpen = useUIStore((s) => s.setCommandOpen);
+  const openTaskForm = useUIStore((s) => s.openTaskForm);
+  const name = useSettingsStore((s) => s.name) || 'Student';
+  const avatarColor = useSettingsStore((s) => s.avatarColor);
+  const resolved = useResolvedTheme();
+  const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
+
+  return (
+    <header className="sticky top-0 z-20 border-b border-border bg-bg/80 backdrop-blur-md print:hidden">
+      <div className="mx-auto flex h-16 max-w-[1200px] items-center gap-3 px-4 sm:px-6 lg:px-8">
+        <Link to="/" className="rounded-md md:hidden" aria-label="StudyHub home">
+          <Logo compact />
+        </Link>
+
+        <button
+          type="button"
+          onClick={() => setCommandOpen(true)}
+          className="flex h-10 min-w-0 flex-1 items-center gap-2.5 rounded-md border border-border bg-surface px-3 text-sm text-muted shadow-soft transition-colors hover:border-border-strong md:max-w-sm"
+          aria-label="Search or jump to (command palette)"
+        >
+          <Search className="h-4 w-4 shrink-0" aria-hidden />
+          <span className="truncate">Search tasks, notes, teachers…</span>
+          <span className="ml-auto hidden items-center gap-1 sm:flex">
+            <Kbd>{isMac ? '⌘' : 'Ctrl'}</Kbd>
+            <Kbd>K</Kbd>
+          </span>
+        </button>
+
+        <div className="ml-auto flex items-center gap-1 sm:gap-2">
+          <IconButton
+            label={resolved === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            onClick={(e) =>
+              switchTheme(resolved === 'dark' ? 'light' : 'dark', centerOf(e.currentTarget))
+            }
+          >
+            {resolved === 'dark' ? (
+              <Sun className="h-[18px] w-[18px] animate-[spin-in_0.5s_var(--ease)]" />
+            ) : (
+              <Moon className="h-[18px] w-[18px] animate-[spin-in_0.5s_var(--ease)]" />
+            )}
+          </IconButton>
+          <IconButton
+            label="New task"
+            variant="soft"
+            onClick={() => openTaskForm()}
+            className="md:hidden"
+          >
+            <Plus className="h-5 w-5" />
+          </IconButton>
+          <Link to="/settings" aria-label="Profile and settings" className="rounded-full">
+            <Avatar name={name} color={avatarColor} size="sm" />
+          </Link>
+        </div>
+      </div>
+    </header>
+  );
+}

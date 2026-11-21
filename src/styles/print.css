@@ -1,0 +1,45 @@
+@media print {
+  :root,
+  .dark {
+    --bg: #fff;
+    --surface: #fff;
+    --surface-2: #f4f4f6;
+    --text: #000;
+    --text-muted: #333;
+    --border: #ccc;
+  }
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  aside,
+  nav,
+  [data-print-hide] {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+    max-width: none !important;
+  }
+  .md {
+    max-width: none;
+    font-size: 11pt;
+  }
+  .md pre {
+    background: #f4f4f6 !important;
+    color: #000 !important;
+    border: 1px solid #ccc;
+    white-space: pre-wrap;
+  }
+  .md a {
+    color: #000;
+  }
+  .md h2 {
+    break-after: avoid;
+  }
+  .md pre,
+  .md table,
+  .md img {
+    break-inside: avoid;
+  }
+}

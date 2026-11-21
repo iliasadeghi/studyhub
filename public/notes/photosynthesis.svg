@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 300" font-family="Plus Jakarta Sans, sans-serif" font-size="13">
+<rect width="520" height="300" rx="16" fill="#f2f8f3"/>
+<ellipse cx="260" cy="155" rx="230" ry="120" fill="#dcfce7" stroke="#16a34a" stroke-width="3"/>
+<g fill="#22c55e" stroke="#15803d" stroke-width="2"><rect x="90" y="110" width="80" height="18" rx="9"/><rect x="90" y="132" width="80" height="18" rx="9"/><rect x="90" y="154" width="80" height="18" rx="9"/><rect x="90" y="176" width="80" height="18" rx="9"/></g>
+<text x="74" y="96" fill="#14532d" font-weight="700">Thylakoids (light reactions)</text>
+<circle cx="360" cy="155" r="58" fill="none" stroke="#d97706" stroke-width="4" stroke-dasharray="14 8"/>
+<text x="322" y="150" fill="#92400e" font-weight="700">Calvin</text><text x="328" y="168" fill="#92400e" font-weight="700">cycle</text>
+<text x="318" y="236" fill="#14532d" font-weight="700">Stroma</text>
+<path d="M180 150 L292 150" stroke="#0e7490" stroke-width="3" marker-end="url(#a)"/>
+<text x="196" y="140" fill="#0e7490" font-weight="700">ATP + NADPH</text>
+<text x="28" y="40" fill="#b45309" font-weight="700">☀ light + H₂O in → O₂ out</text>
+<text x="360" y="40" fill="#14532d" font-weight="700">CO₂ in → glucose out</text>
+<defs><marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 10 5 0 10z" fill="#0e7490"/></marker></defs>
+</svg>
