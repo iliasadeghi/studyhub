@@ -13,17 +13,38 @@ import {
   type ArtProps,
 } from './illustrations';
 import { ArtsArt, GeneralArt, SportsArt } from './moreIllustrations';
+import { BiologyArt, ChemistryArt, MedicineArt, PhysicsArt } from './scienceIllustrations';
+import {
+  EarthArt,
+  GeometryArt,
+  IdeaArt,
+  MusicArt,
+  NotebookArt,
+  PsychologyArt,
+  StatsArt,
+} from './otherIllustrations';
 
 const ART: Record<ArtKind, (p: ArtProps) => ReactElement> = {
-  math: MathArt,
+  medicine: MedicineArt,
+  chemistry: ChemistryArt,
+  biology: BiologyArt,
+  physics: PhysicsArt,
+  earth: EarthArt,
   science: ScienceArt,
+  geometry: GeometryArt,
+  stats: StatsArt,
+  math: MathArt,
+  code: CodeArt,
+  languages: LanguagesArt,
   english: EnglishArt,
   history: HistoryArt,
-  languages: LanguagesArt,
-  code: CodeArt,
+  psychology: PsychologyArt,
+  music: MusicArt,
   arts: ArtsArt,
   sports: SportsArt,
   general: GeneralArt,
+  idea: IdeaArt,
+  notebook: NotebookArt,
 };
 
 /** Decorative illustration that matches a class's subject and color. */

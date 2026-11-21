@@ -8,6 +8,7 @@ import { cn } from '@/utils/cn';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Field, Input } from '@/components/ui/Field';
+import { suggestColor } from './art/pickArt';
 
 const EMPTY: Pick<ClassItem, 'name' | 'subject' | 'color' | 'room' | 'schedule'> = {
   name: '',
@@ -67,6 +68,13 @@ export function ClassForm({
   const pushToast = useUIStore((s) => s.pushToast);
   const [draft, setDraft] = useState<ClassDraft>(initial ?? EMPTY);
   const [busy, setBusy] = useState(false);
+  // New classes pick a color from the subject until the teacher chooses one.
+  const [colorTouched, setColorTouched] = useState(initial !== null);
+  const autoColor = (name: string, subject: string) => {
+    if (colorTouched) return;
+    const c = suggestColor(`${subject} ${name}`);
+    if (c) setDraft((d) => ({ ...d, color: c }));
+  };
   const [error, setError] = useState('');
   const set = <K extends keyof ClassDraft>(k: K, v: ClassDraft[K]) =>
     setDraft((d) => ({ ...d, [k]: v }));
@@ -123,6 +131,7 @@ export function ClassForm({
               value={draft.name}
               onChange={(e) => {
                 set('name', e.target.value);
+                autoColor(e.target.value, draft.subject);
                 setError('');
               }}
               placeholder="e.g. Chemistry"
@@ -135,7 +144,10 @@ export function ClassForm({
             <Input
               id={id}
               value={draft.subject}
-              onChange={(e) => set('subject', e.target.value)}
+              onChange={(e) => {
+                set('subject', e.target.value);
+                autoColor(draft.name, e.target.value);
+              }}
               placeholder="Science"
             />
           )}
@@ -201,7 +213,13 @@ export function ClassForm({
           )}
         </Field>
       </div>
-      <ColorPicker value={draft.color} onChange={(c) => set('color', c)} />
+      <ColorPicker
+        value={draft.color}
+        onChange={(c) => {
+          setColorTouched(true);
+          set('color', c);
+        }}
+      />
     </form>
   );
 }
