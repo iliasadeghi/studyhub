@@ -4,12 +4,17 @@ import {
   ArrowLeft,
   BookOpenText,
   CheckSquare,
+  Copy,
   LayoutGrid,
+  LogOut,
   Pencil,
   Plus,
   Trash2,
   UserRound,
+  Users,
 } from 'lucide-react';
+import { useProfile } from '@/stores/authStore';
+import { ClassRoster } from './ClassRoster';
 import { useClassStore } from '@/stores/classStore';
 import { useTaskStore } from '@/stores/taskStore';
 import { useTeacherStore } from '@/stores/teacherStore';
@@ -49,6 +54,9 @@ export default function ClassDetailPage() {
   const now = useNow();
   const [editOpen, setEditOpen] = useState(false);
   const [bookOpen, setBookOpen] = useState(false);
+  const me = useProfile();
+  const isTeacher = me.role === 'teacher';
+  const roster = useClassStore((s) => s.rosters[classId] ?? []);
 
   if (!cls) return <NotFoundPage />;
 
@@ -61,14 +69,28 @@ export default function ClassDetailPage() {
   );
   const notes = allNotes.filter((n) => n.classId === cls.id);
   const teacher = teachers.find((t) => t.id === cls.teacherId);
+  const teacherName = isTeacher ? me.fullName : (teacher?.name ?? 'Teacher');
   const v = subjectVars(cls.color);
 
   const remove = () => {
-    if (!window.confirm(`Delete "${cls.name}"? Its tasks will be kept as personal tasks.`)) return;
+    const msg = isTeacher
+      ? `Delete "${cls.name}" for everyone? Students lose access to its class notes.`
+      : `Leave "${cls.name}"? Your tasks for it stay as personal tasks.`;
+    if (!window.confirm(msg)) return;
     useTaskStore.getState().detachClass(cls.id);
-    useClassStore.getState().deleteClass(cls.id);
-    pushToast({ title: 'Class deleted', description: cls.name });
+    if (isTeacher) useClassStore.getState().deleteClass(cls.id);
+    else useClassStore.getState().leaveClass(cls.id, me.id);
+    pushToast({ title: isTeacher ? 'Class deleted' : 'Left class', description: cls.name });
     navigate('/classes');
+  };
+
+  const copyCode = async () => {
+    try {
+      await navigator.clipboard.writeText(cls.joinCode);
+      pushToast({ variant: 'success', title: 'Join code copied', description: cls.joinCode });
+    } catch {
+      pushToast({ title: 'Join code', description: cls.joinCode });
+    }
   };
 
   return (
@@ -81,22 +103,24 @@ export default function ClassDetailPage() {
           <ArrowLeft className="h-4 w-4" aria-hidden /> All classes
         </Link>
         <div className="flex gap-2">
+          {isTeacher && (
+            <Button
+              variant="secondary"
+              size="sm"
+              leftIcon={<Pencil className="h-4 w-4" />}
+              onClick={() => setEditOpen(true)}
+            >
+              Edit
+            </Button>
+          )}
           <Button
             variant="secondary"
             size="sm"
-            leftIcon={<Pencil className="h-4 w-4" />}
-            onClick={() => setEditOpen(true)}
-          >
-            Edit
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            leftIcon={<Trash2 className="h-4 w-4" />}
+            leftIcon={isTeacher ? <Trash2 className="h-4 w-4" /> : <LogOut className="h-4 w-4" />}
             onClick={remove}
-            aria-label={`Delete ${cls.name}`}
+            aria-label={isTeacher ? `Delete ${cls.name}` : `Leave ${cls.name}`}
           >
-            <span className="hidden sm:inline">Delete</span>
+            <span className="hidden sm:inline">{isTeacher ? 'Delete' : 'Leave'}</span>
           </Button>
         </div>
       </div>
@@ -114,8 +138,19 @@ export default function ClassDetailPage() {
           </p>
           <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{cls.name}</h1>
           <p className="mt-1 text-sm text-muted">
-            {teacher?.name ?? 'No teacher'} · {cls.room || 'No room'} · {scheduleLabel(cls)}
+            {teacherName} · {cls.room || 'No room'} · {scheduleLabel(cls)}
           </p>
+          {isTeacher && (
+            <button
+              type="button"
+              onClick={() => void copyCode()}
+              className="mt-3 inline-flex items-center gap-2 rounded-md border border-border bg-surface/90 px-3 py-1.5 text-sm font-semibold shadow-soft hover:bg-surface"
+              aria-label={`Copy join code ${cls.joinCode}`}
+            >
+              Join code <span className="font-mono tracking-widest">{cls.joinCode}</span>
+              <Copy className="h-3.5 w-3.5 text-muted" aria-hidden />
+            </button>
+          )}
         </div>
       </header>
 
@@ -144,8 +179,12 @@ export default function ClassDetailPage() {
             },
             {
               id: 'teacher',
-              label: 'Teacher',
-              icon: <UserRound className="h-4 w-4" aria-hidden />,
+              label: isTeacher ? `Students (${roster.length})` : 'Teacher',
+              icon: isTeacher ? (
+                <Users className="h-4 w-4" aria-hidden />
+              ) : (
+                <UserRound className="h-4 w-4" aria-hidden />
+              ),
             },
           ]}
         />
@@ -182,7 +221,11 @@ export default function ClassDetailPage() {
           </>
         )}
         {tab === 'notes' && <ClassNotesList classId={cls.id} notes={notes} />}
+        {tab === 'teacher' && isTeacher && (
+          <ClassRoster classId={cls.id} joinCode={cls.joinCode} students={roster} />
+        )}
         {tab === 'teacher' &&
+          !isTeacher &&
           (teacher ? (
             <TeacherProfileCard
               teacher={teacher}
@@ -192,15 +235,16 @@ export default function ClassDetailPage() {
           ) : (
             <EmptyState
               icon={<UserRound className="h-8 w-8" />}
-              title="No teacher assigned"
-              description="Edit this class to add a teacher."
-              action={<Button onClick={() => setEditOpen(true)}>Edit class</Button>}
+              title="Teacher not available"
+              description="This teacher's profile couldn't be loaded."
             />
           ))}
       </div>
 
-      <ClassFormModal open={editOpen} onClose={() => setEditOpen(false)} classItem={cls} />
-      {teacher && (
+      {isTeacher && (
+        <ClassFormModal open={editOpen} onClose={() => setEditOpen(false)} classItem={cls} />
+      )}
+      {teacher && !isTeacher && (
         <BookingModal
           open={bookOpen}
           onClose={() => setBookOpen(false)}

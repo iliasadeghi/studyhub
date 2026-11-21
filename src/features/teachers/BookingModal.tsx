@@ -18,7 +18,7 @@ function BookingForm({
   classItem?: ClassItem;
   onDone: () => void;
 }) {
-  const addEvent = useEventStore((s) => s.addEvent);
+  const bookOfficeHours = useEventStore((s) => s.bookOfficeHours);
   const pushToast = useUIStore((s) => s.pushToast);
   const slots = useMemo(() => upcomingSlots(teacher, new Date()), [teacher]);
   const days = [...new Set(slots.map((s) => format(s.start, 'yyyy-MM-dd')))];
@@ -28,32 +28,43 @@ function BookingForm({
   const [topic, setTopic] = useState('');
   const [notes, setNotes] = useState('');
 
-  const submit = (e: FormEvent) => {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
     const slot = slots.find((s) => s.key === slotKey);
-    if (!slot) return;
-    addEvent({
-      title: `Office hours: ${teacher.name}`,
-      start: slot.start.toISOString(),
-      end: new Date(slot.start.getTime() + 15 * 60_000).toISOString(),
-      classId: classItem?.id ?? null,
-      teacherId: teacher.id,
-      kind: 'office-hours',
-      notes: [topic, slot.location, notes].filter(Boolean).join(' · '),
-    });
-    pushToast({
-      variant: 'success',
-      title: 'Booked!',
-      description: `${format(slot.start, 'EEE, MMM d')} at ${format(slot.start, 'h:mm a')} — added to your calendar.`,
-    });
-    onDone();
+    if (!slot || busy) return;
+    setBusy(true);
+    setError('');
+    try {
+      await bookOfficeHours({
+        teacherId: teacher.id,
+        start: slot.start.toISOString(),
+        end: new Date(slot.start.getTime() + 15 * 60_000).toISOString(),
+        topic:
+          [topic.trim(), notes.trim()].filter(Boolean).join(' — ') ||
+          (classItem ? `${classItem.name} help` : 'Office hours'),
+        location: slot.location,
+      });
+      pushToast({
+        variant: 'success',
+        title: 'Booked!',
+        description: `${format(slot.start, 'EEE, MMM d')} at ${format(slot.start, 'h:mm a')}. ${teacher.name} can see it on their dashboard.`,
+      });
+      onDone();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not book this slot.');
+    } finally {
+      setBusy(false);
+    }
   };
 
   if (slots.length === 0)
     return <p className="text-sm text-muted">No open office-hour slots in the next two weeks.</p>;
 
   return (
-    <form id="booking-form" onSubmit={submit} className="space-y-4">
+    <form id="booking-form" onSubmit={(e) => void submit(e)} className="space-y-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field label="Day">
           {(id) => (
@@ -103,8 +114,13 @@ function BookingForm({
           <Textarea id={id} rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
         )}
       </Field>
+      {error && (
+        <p role="alert" className="text-sm font-medium text-danger-text">
+          {error}
+        </p>
+      )}
       <p className="text-xs text-muted">
-        This is a demo — the booking is saved to your calendar only.
+        The booking appears on your calendar and on your teacher's dashboard.
       </p>
     </form>
   );

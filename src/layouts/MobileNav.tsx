@@ -4,13 +4,17 @@ import { Keyboard, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { Modal } from '@/components/ui/Modal';
 import { useUIStore } from '@/stores/uiStore';
-import { MOBILE_PRIMARY, NAV_ITEMS, SETTINGS_ITEM } from './nav';
+import { useProfile } from '@/stores/authStore';
+import { useUnreadCount } from '@/hooks/useUnread';
+import { MOBILE_PRIMARY, NAV_ITEMS, SETTINGS_ITEM, navLabel } from './nav';
 
 /** Bottom tab bar for phones (<768px). */
 export function MobileNav() {
   const [moreOpen, setMoreOpen] = useState(false);
   const location = useLocation();
   const setShortcutsOpen = useUIStore((s) => s.setShortcutsOpen);
+  const role = useProfile().role;
+  const unread = useUnreadCount();
   const primary = NAV_ITEMS.filter((i) => MOBILE_PRIMARY.includes(i.to));
   const secondary = [...NAV_ITEMS.filter((i) => !MOBILE_PRIMARY.includes(i.to)), SETTINGS_ITEM];
   const moreActive = secondary.some((i) => location.pathname.startsWith(i.to));
@@ -38,13 +42,19 @@ export function MobileNav() {
                   <>
                     <span
                       className={cn(
-                        'grid h-7 w-12 place-items-center rounded-full transition-colors',
+                        'relative grid h-7 w-12 place-items-center rounded-full transition-colors',
                         isActive && 'bg-accent-soft',
                       )}
                     >
                       <Icon className="h-5 w-5" aria-hidden />
+                      {item.to === '/messages' && unread > 0 && (
+                        <span className="absolute -top-1 right-1 grid h-4 min-w-4 place-items-center rounded-full bg-accent px-1 text-[10px] font-bold text-accent-fg">
+                          {unread}
+                          <span className="sr-only"> unread</span>
+                        </span>
+                      )}
                     </span>
-                    {item.label === 'Dashboard' ? 'Home' : item.label}
+                    {item.label === 'Dashboard' ? 'Home' : navLabel(item, role)}
                   </>
                 )}
               </NavLink>
@@ -81,7 +91,7 @@ export function MobileNav() {
                   className="flex h-20 flex-col items-center justify-center gap-2 rounded-lg border border-border bg-surface-2 text-sm font-semibold hover:border-accent"
                 >
                   <Icon className="h-5 w-5 text-accent-text" aria-hidden />
-                  {item.label}
+                  {navLabel(item, role)}
                 </NavLink>
               </li>
             );

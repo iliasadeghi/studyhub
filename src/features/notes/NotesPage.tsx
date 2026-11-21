@@ -2,6 +2,8 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { formatDistanceToNowStrict } from 'date-fns';
 import { ArrowLeft, BookOpenText, Clock } from 'lucide-react';
 import { useNoteStore } from '@/stores/noteStore';
+import { useProfile } from '@/stores/authStore';
+import { toast } from '@/stores/uiStore';
 import { useClassMap, useClassStore } from '@/stores/classStore';
 import { cn } from '@/utils/cn';
 import { Card } from '@/components/ui/Card';
@@ -59,12 +61,22 @@ export default function NotesPage() {
   const addNote = useNoteStore((s) => s.addNote);
   const classes = useClassStore((s) => s.classes);
   const classMap = useClassMap();
-  const editing = params.get('edit') === '1' && note?.kind === 'mine';
+  const me = useProfile();
+  const editing = params.get('edit') === '1' && note?.authorId === me.id;
 
   const createNote = () => {
-    const classId = note?.classId ?? classes[0]?.id ?? '';
+    const classId = note?.classId ?? classes[0]?.id;
+    if (!classId) {
+      toast({
+        title: me.role === 'teacher' ? 'Create a class first' : 'Join a class first',
+        description: 'Notes are organized by class.',
+        action: { label: 'Classes', onClick: () => navigate('/classes') },
+      });
+      return;
+    }
     const n = addNote({
       classId,
+      visibility: me.role === 'teacher' ? 'class' : 'private',
       unit: note?.unit ?? 'General',
       title: 'Untitled note',
       content: '# Untitled note\n\nStart writing here…\n',

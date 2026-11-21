@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Check, Eye, PenLine } from 'lucide-react';
 import type { ClassItem, Note } from '@/types';
 import { useNoteStore } from '@/stores/noteStore';
+import { useProfile } from '@/stores/authStore';
+import { Toggle } from '@/features/settings/SettingsSection';
 import { useDebounce } from '@/hooks/useDebounce';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -17,6 +19,7 @@ type Pane = 'write' | 'preview';
 export function NoteEditor({ note, classes }: { note: Note; classes: ClassItem[] }) {
   const navigate = useNavigate();
   const updateNote = useNoteStore((s) => s.updateNote);
+  const teacher = useProfile().role === 'teacher';
   const [draft, setDraft] = useState({
     title: note.title,
     unit: note.unit,
@@ -103,6 +106,21 @@ export function NoteEditor({ note, classes }: { note: Note; classes: ClassItem[]
           )}
         </Field>
       </div>
+
+      {teacher && (
+        <div className="mb-4 rounded-md border border-border bg-surface-2/60 p-3">
+          <Toggle
+            label="Share with class"
+            description={
+              note.visibility === 'class'
+                ? 'Students in this class can read this note.'
+                : 'Only you can see this note.'
+            }
+            checked={note.visibility === 'class'}
+            onChange={(on) => updateNote(note.id, { visibility: on ? 'class' : 'private' })}
+          />
+        </div>
+      )}
 
       <div className="mb-3 lg:hidden">
         <Tabs<Pane>

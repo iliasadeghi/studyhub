@@ -78,7 +78,7 @@ export function RecentMessagesCard() {
   const teachers = useTeacherStore((s) => s.teachers);
   const latest = teachers
     .map((t) => {
-      const thread = messages.filter((m) => m.teacherId === t.id);
+      const thread = messages.filter((m) => m.contactId === t.id);
       return {
         teacher: t,
         last: thread[thread.length - 1],
@@ -96,10 +96,10 @@ export function RecentMessagesCard() {
         icon={<MessageCircle className="h-4 w-4" />}
         action={
           <Link
-            to="/teachers"
+            to="/messages"
             className="rounded-sm px-2 py-1 text-xs font-semibold text-accent-text hover:bg-accent-soft"
           >
-            Teachers
+            Inbox
           </Link>
         }
       />
@@ -108,17 +108,17 @@ export function RecentMessagesCard() {
           compact
           icon={<MessageCircle className="h-6 w-6" />}
           title="No messages yet"
-          description="Questions for a teacher? Start a conversation from the Teachers page."
+          description="Messages with your teachers and students show up here in real time."
         />
       ) : (
         <ul className="-mx-2 space-y-1">
           {latest.map(({ teacher, last, unread }) => (
             <li key={teacher.id}>
               <Link
-                to={`/teachers/${teacher.id}`}
+                to={`/messages/${teacher.id}`}
                 className="flex items-center gap-3 rounded-md p-2 hover:bg-surface-2"
               >
-                <Avatar name={teacher.name} color="purple" size="sm" />
+                <Avatar name={teacher.name} color={teacher.avatarColor} size="sm" />
                 <div className="min-w-0 flex-1">
                   <p className="flex items-center justify-between gap-2 text-sm">
                     <span className="truncate font-semibold">{teacher.name}</span>
@@ -127,7 +127,7 @@ export function RecentMessagesCard() {
                     </span>
                   </p>
                   <p className="truncate text-xs text-muted">
-                    {last.from === 'student' ? 'You: ' : ''}
+                    {last.mine ? 'You: ' : ''}
                     {last.body}
                   </p>
                 </div>

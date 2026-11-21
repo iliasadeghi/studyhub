@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import { Check, Sparkles } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { subjectVars } from '@/utils/colors';
-import type { CalendarItem } from './useCalendarItems';
+import { isBookingEvent, type CalendarItem } from './useCalendarItems';
 
 function chipStyle(item: CalendarItem) {
   const v = item.color ? subjectVars(item.color) : null;
@@ -41,7 +41,7 @@ export function CalendarChip({
   showTime?: boolean;
   onClick?: () => void;
 }) {
-  const draggable = item.kind !== 'study';
+  const draggable = item.kind === 'task' || (item.kind === 'event' && !isBookingEvent(item.id));
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `${item.kind}:${item.id}`,
     disabled: !draggable,

@@ -1,7 +1,9 @@
-import { Link } from 'react-router-dom';
-import { Moon, Plus, Search, Sun } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { LogOut, Moon, Plus, Search, Settings, Sun } from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
-import { useSettingsStore } from '@/stores/settingsStore';
+import { useProfile } from '@/stores/authStore';
+import { supabase } from '@/lib/supabase';
+import { Menu } from '@/components/ui/Menu';
 import { useResolvedTheme } from '@/hooks/useTheme';
 import { Avatar, Kbd } from '@/components/ui/Misc';
 import { IconButton } from '@/components/ui/Button';
@@ -11,8 +13,10 @@ import { Logo } from './Logo';
 export function Topbar() {
   const setCommandOpen = useUIStore((s) => s.setCommandOpen);
   const openTaskForm = useUIStore((s) => s.openTaskForm);
-  const name = useSettingsStore((s) => s.name) || 'Student';
-  const avatarColor = useSettingsStore((s) => s.avatarColor);
+  const profile = useProfile();
+  const navigate = useNavigate();
+  const name = profile.fullName || 'You';
+  const avatarColor = profile.avatarColor;
   const resolved = useResolvedTheme();
   const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 
@@ -30,7 +34,7 @@ export function Topbar() {
           aria-label="Search or jump to (command palette)"
         >
           <Search className="h-4 w-4 shrink-0" aria-hidden />
-          <span className="truncate">Search tasks, notes, teachers…</span>
+          <span className="truncate">Search tasks, notes, people…</span>
           <span className="ml-auto hidden items-center gap-1 sm:flex">
             <Kbd>{isMac ? '⌘' : 'Ctrl'}</Kbd>
             <Kbd>K</Kbd>
@@ -58,9 +62,30 @@ export function Topbar() {
           >
             <Plus className="h-5 w-5" />
           </IconButton>
-          <Link to="/settings" aria-label="Profile and settings" className="rounded-full">
-            <Avatar name={name} color={avatarColor} size="sm" />
-          </Link>
+          <Menu
+            items={[
+              {
+                label: 'Profile & settings',
+                icon: <Settings className="h-4 w-4" />,
+                onSelect: () => navigate('/settings'),
+              },
+              {
+                label: 'Sign out',
+                icon: <LogOut className="h-4 w-4" />,
+                onSelect: () => void supabase.auth.signOut({ scope: 'local' }),
+              },
+            ]}
+            trigger={(props) => (
+              <button
+                type="button"
+                {...props}
+                aria-label={`Account menu for ${name}`}
+                className="rounded-full"
+              >
+                <Avatar name={name} color={avatarColor} size="sm" />
+              </button>
+            )}
+          />
         </div>
       </div>
     </header>

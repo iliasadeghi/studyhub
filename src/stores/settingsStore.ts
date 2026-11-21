@@ -3,21 +3,17 @@ import { persist } from 'zustand/middleware';
 import type { UserSettings } from '@/types';
 import { STORE_VERSION, storageKey } from './persist';
 
+/** Per-device preferences. Profile data (name, grade, avatar) lives in the database. */
 export const DEFAULT_SETTINGS: UserSettings = {
-  name: '',
-  grade: '10',
-  avatarColor: 'purple',
   theme: 'system',
   accent: 'indigo',
   defaultTaskView: 'list',
   weekStartsOn: 1,
-  onboarded: false,
   notificationsEnabled: false,
 };
 
 interface SettingsState extends UserSettings {
   update: (patch: Partial<UserSettings>) => void;
-  replace: (settings: UserSettings) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -25,27 +21,31 @@ export const useSettingsStore = create<SettingsState>()(
     (set) => ({
       ...DEFAULT_SETTINGS,
       update: (patch) => set(patch),
-      replace: (settings) => set({ ...DEFAULT_SETTINGS, ...settings }),
     }),
     {
       name: storageKey('settings'),
-      version: STORE_VERSION,
-      migrate: (state) => ({ ...DEFAULT_SETTINGS, ...(state as Partial<UserSettings>) }),
+      version: STORE_VERSION + 1,
+      // v1 also stored profile fields and sample-data flags; keep only preferences.
+      migrate: (state) => {
+        const s = (state ?? {}) as Partial<UserSettings>;
+        return {
+          theme: s.theme ?? DEFAULT_SETTINGS.theme,
+          accent: s.accent ?? DEFAULT_SETTINGS.accent,
+          defaultTaskView: s.defaultTaskView ?? DEFAULT_SETTINGS.defaultTaskView,
+          weekStartsOn: s.weekStartsOn ?? DEFAULT_SETTINGS.weekStartsOn,
+          notificationsEnabled: s.notificationsEnabled ?? DEFAULT_SETTINGS.notificationsEnabled,
+        };
+      },
     },
   ),
 );
 
-/** Snapshot of just the data fields (for export). */
-export function pickSettings(s: SettingsState): UserSettings {
+export function pickSettings(s: UserSettings): UserSettings {
   return {
-    name: s.name,
-    grade: s.grade,
-    avatarColor: s.avatarColor,
     theme: s.theme,
     accent: s.accent,
     defaultTaskView: s.defaultTaskView,
     weekStartsOn: s.weekStartsOn,
-    onboarded: s.onboarded,
     notificationsEnabled: s.notificationsEnabled,
   };
 }

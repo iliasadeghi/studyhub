@@ -58,9 +58,27 @@ export interface ClassItem {
   color: SubjectColor;
   room: string;
   schedule: ClassSchedule;
+  /** Code students use to join (visible to the class teacher and members) */
+  joinCode: string;
+}
+
+export type UserRole = 'student' | 'teacher';
+
+/** The signed-in user's own profile row. */
+export interface Profile {
+  id: string;
+  email: string;
+  fullName: string;
+  role: UserRole;
+  grade: string | null;
+  avatarColor: SubjectColor;
+  bio: string;
+  preferredContact: ContactMethod;
+  onboarded: boolean;
 }
 
 export interface OfficeHour {
+  id?: string;
   day: number;
   start: string;
   end: string;
@@ -69,36 +87,63 @@ export interface OfficeHour {
 
 export type ContactMethod = 'email' | 'message' | 'in-person';
 
+/** Another user you can see: your teachers (if you're a student) or your students (if you teach). */
 export interface Teacher {
   id: string;
+  role: UserRole;
   name: string;
+  /** Names of the classes you share */
   subjects: string[];
   email: string;
   officeHours: OfficeHour[];
   preferredContact: ContactMethod;
   bio: string;
+  avatarColor: SubjectColor;
 }
+export type Contact = Teacher;
 
 export type NoteKind = 'teacher' | 'mine';
+export type NoteVisibility = 'private' | 'class';
 
 export interface Note {
   id: string;
   classId: string;
+  authorId: string;
   unit: string;
   title: string;
   content: string;
+  /** 'teacher' = shared with the class, 'mine' = private to the author */
   kind: NoteKind;
+  visibility: NoteVisibility;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface Message {
   id: string;
-  teacherId: string;
-  from: 'student' | 'teacher';
+  conversationId: string;
+  /** The other person in the conversation */
+  contactId: string;
+  senderId: string;
+  /** Sent by the signed-in user */
+  mine: boolean;
   body: string;
   sentAt: string;
+  /** For incoming messages: you've read it. For your messages: they've read it. */
   read: boolean;
+  /** Optimistic message not yet confirmed by the server */
+  pending?: boolean;
+}
+
+export interface Booking {
+  id: string;
+  teacherId: string;
+  studentId: string;
+  start: string;
+  end: string;
+  topic: string;
+  location: string;
+  status: 'booked' | 'cancelled';
 }
 
 export type EventKind = 'office-hours' | 'study' | 'event';
@@ -114,14 +159,11 @@ export interface CalendarEvent {
   notes: string;
 }
 
+/** Per-device preferences (stored locally, not in the database). */
 export interface UserSettings {
-  name: string;
-  grade: string;
-  avatarColor: SubjectColor;
   theme: ThemeMode;
   accent: AccentColor;
   defaultTaskView: TaskView;
   weekStartsOn: 0 | 1;
-  onboarded: boolean;
   notificationsEnabled: boolean;
 }

@@ -14,6 +14,8 @@ import { ProgressCard } from './ProgressCard';
 import { WorkloadCard } from './WorkloadCard';
 import { TodayCard, UpcomingCard } from './AgendaCards';
 import { RecentMessagesCard, RecentNotesCard } from './RecentCards';
+import { TeacherDashboard } from './TeacherDashboard';
+import { useProfile } from '@/stores/authStore';
 
 const stagger = {
   hidden: {},
@@ -25,10 +27,15 @@ const item = {
 };
 
 export default function DashboardPage() {
+  const role = useProfile().role;
+  return role === 'teacher' ? <TeacherDashboard /> : <StudentDashboard />;
+}
+
+function StudentDashboard() {
   const tasks = useTaskStore((s) => s.tasks);
   const classes = useClassStore((s) => s.classes);
   const classMap = useClassMap();
-  const name = useSettingsStore((s) => s.name);
+  const name = useProfile().fullName.split(' ')[0];
   const weekStartsOn = useSettingsStore((s) => s.weekStartsOn);
   const openTaskForm = useUIStore((s) => s.openTaskForm);
   const now = useNow();

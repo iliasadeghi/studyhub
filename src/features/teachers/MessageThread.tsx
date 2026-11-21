@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { format, isSameDay, isToday, isYesterday } from 'date-fns';
-import { MessageCircle } from 'lucide-react';
+import { Check, CheckCheck, MessageCircle } from 'lucide-react';
 import type { Message, Teacher } from '@/types';
 import { cn } from '@/utils/cn';
 import { EmptyState } from '@/components/ui/Misc';
@@ -57,7 +57,7 @@ export function MessageThread({
         compact
         icon={<MessageCircle className="h-6 w-6" />}
         title={`Start a conversation with ${teacher.name}`}
-        description="Pick a template below or write your own message."
+        description="Say hello, ask a question, or pick a template below."
       />
     );
   }
@@ -72,7 +72,8 @@ export function MessageThread({
       {messages.map((m, i) => {
         const d = new Date(m.sentAt);
         const showDay = i === 0 || !isSameDay(d, new Date(messages[i - 1].sentAt));
-        const mine = m.from === 'student';
+        const mine = m.mine;
+        const isLastMine = mine && !messages.slice(i + 1).some((n) => n.mine);
         return (
           <div key={m.id}>
             {showDay && (
@@ -88,7 +89,8 @@ export function MessageThread({
             >
               <div
                 className={cn(
-                  'max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap sm:max-w-[75%]',
+                  'max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed break-words whitespace-pre-wrap sm:max-w-[75%]',
+                  m.pending && 'opacity-70',
                   mine
                     ? 'rounded-br-md bg-accent text-accent-fg'
                     : 'rounded-bl-md bg-surface-2 text-fg',
@@ -97,7 +99,25 @@ export function MessageThread({
                 <span className="sr-only">{mine ? 'You' : teacher.name}: </span>
                 {m.body}
               </div>
-              <span className="mt-1 px-1 text-[11px] text-muted">{format(d, 'h:mm a')}</span>
+              <span className="mt-1 flex items-center gap-1 px-1 text-[11px] text-muted">
+                {format(d, 'h:mm a')}
+                {isLastMine && (
+                  <span className="inline-flex items-center gap-0.5">
+                    ·{' '}
+                    {m.pending ? (
+                      'Sending…'
+                    ) : m.read ? (
+                      <>
+                        <CheckCheck className="h-3.5 w-3.5 text-accent-text" aria-hidden /> Seen
+                      </>
+                    ) : (
+                      <>
+                        <Check className="h-3.5 w-3.5" aria-hidden /> Delivered
+                      </>
+                    )}
+                  </span>
+                )}
+              </span>
             </motion.div>
           </div>
         );

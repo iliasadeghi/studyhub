@@ -33,19 +33,22 @@ export function GlobalUI() {
     !anyOpen,
   );
 
-  // Toast (and optionally notify) when a teacher replies while you're elsewhere.
+  // Toast (and optionally notify) when someone messages you while you're elsewhere.
   useEffect(
     () =>
       messageService.onIncoming((msg) => {
-        if (window.location.pathname.endsWith(`/teachers/${msg.teacherId}`)) return;
-        const teacher = useTeacherStore.getState().teachers.find((t) => t.id === msg.teacherId);
-        const name = teacher?.name ?? 'Your teacher';
-        pushToast({
-          title: `New message from ${name}`,
-          description: msg.body.length > 80 ? `${msg.body.slice(0, 80)}…` : msg.body,
-          action: { label: 'Open', onClick: () => navigate(`/teachers/${msg.teacherId}`) },
-          duration: 7000,
-        });
+        const onThread = window.location.pathname.endsWith(`/messages/${msg.contactId}`);
+        if (onThread && !document.hidden) return;
+        const sender = useTeacherStore.getState().teachers.find((t) => t.id === msg.contactId);
+        const name = sender?.name ?? 'Someone';
+        if (!onThread) {
+          pushToast({
+            title: `New message from ${name}`,
+            description: msg.body.length > 80 ? `${msg.body.slice(0, 80)}…` : msg.body,
+            action: { label: 'Open', onClick: () => navigate(`/messages/${msg.contactId}`) },
+            duration: 7000,
+          });
+        }
         if (useSettingsStore.getState().notificationsEnabled && document.hidden)
           notify(`Message from ${name}`, msg.body);
       }),

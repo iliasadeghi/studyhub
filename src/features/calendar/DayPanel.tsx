@@ -11,13 +11,14 @@ import { Card } from '@/components/ui/Card';
 import { Button, IconButton } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/Misc';
 import { MiniTaskRow } from '@/features/dashboard/MiniTaskRow';
-import type { CalendarItem } from './useCalendarItems';
+import { BOOKING_PREFIX, isBookingEvent, type CalendarItem } from './useCalendarItems';
 
 export function DayPanel({ day, items, now }: { day: Date; items: CalendarItem[]; now: Date }) {
   const openTaskForm = useUIStore((s) => s.openTaskForm);
   const pushToast = useUIStore((s) => s.pushToast);
   const addEvent = useEventStore((s) => s.addEvent);
   const deleteEvent = useEventStore((s) => s.deleteEvent);
+  const cancelBooking = useEventStore((s) => s.cancelBooking);
   const classMap = useClassMap();
 
   const tasks = items
@@ -108,8 +109,17 @@ export function DayPanel({ day, items, now }: { day: Date; items: CalendarItem[]
                 </div>
                 <IconButton
                   size="sm"
-                  label={`Delete event "${e.title}"`}
-                  onClick={() => deleteEvent(e.id)}
+                  label={
+                    isBookingEvent(e.id)
+                      ? `Cancel booking "${e.title}"`
+                      : `Delete event "${e.title}"`
+                  }
+                  onClick={() =>
+                    isBookingEvent(e.id)
+                      ? window.confirm('Cancel this office-hours booking?') &&
+                        cancelBooking(e.id.slice(BOOKING_PREFIX.length))
+                      : deleteEvent(e.id)
+                  }
                 >
                   <Trash2 className="h-4 w-4" />
                 </IconButton>

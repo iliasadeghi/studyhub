@@ -1,7 +1,6 @@
 import { Suspense } from 'react';
-import { Navigate, useLocation, useOutlet } from 'react-router-dom';
+import { useLocation, useOutlet } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useSettingsStore } from '@/stores/settingsStore';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { GlobalUI } from '@/components/GlobalUI';
 import { ReminderBanner } from '@/components/ReminderBanner';
@@ -33,9 +32,6 @@ function AnimatedOutlet() {
 }
 
 export function AppLayout() {
-  const onboarded = useSettingsStore((s) => s.onboarded);
-  if (!onboarded) return <Navigate to="/welcome" replace />;
-
   return (
     <div className="min-h-dvh">
       <a

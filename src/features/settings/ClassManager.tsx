@@ -1,35 +1,49 @@
 import { useState } from 'react';
-import { ArrowDown, ArrowUp, Pencil, Plus, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, LogOut, Pencil, Plus, Trash2 } from 'lucide-react';
 import type { ClassItem } from '@/types';
 import { useClassStore } from '@/stores/classStore';
 import { useTaskStore } from '@/stores/taskStore';
 import { useTeacherStore } from '@/stores/teacherStore';
+import { useProfile } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
 import { subjectVars } from '@/utils/colors';
 import { Button, IconButton } from '@/components/ui/Button';
 import { ClassFormModal } from '@/features/classes/ClassFormModal';
+import { JoinClassModal } from '@/features/classes/JoinClassForm';
 import { SettingsSection } from './SettingsSection';
 
 export function ClassManager() {
+  const me = useProfile();
+  const teacher = me.role === 'teacher';
   const classes = useClassStore((s) => s.classes);
-  const teachers = useTeacherStore((s) => s.teachers);
-  const { moveClass, deleteClass } = useClassStore.getState();
+  const rosters = useClassStore((s) => s.rosters);
+  const people = useTeacherStore((s) => s.teachers);
+  const { moveClass, deleteClass, leaveClass } = useClassStore.getState();
   const pushToast = useUIStore((s) => s.pushToast);
   const [editing, setEditing] = useState<ClassItem | null>(null);
-  const [open, setOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
+  const [joinOpen, setJoinOpen] = useState(false);
 
   const remove = (c: ClassItem) => {
-    if (!window.confirm(`Delete "${c.name}"? Its tasks will be kept as personal tasks.`)) return;
+    const msg = teacher
+      ? `Delete "${c.name}" for everyone? Students lose access to its class notes.`
+      : `Leave "${c.name}"? Your tasks for it stay as personal tasks.`;
+    if (!window.confirm(msg)) return;
     useTaskStore.getState().detachClass(c.id);
-    deleteClass(c.id);
-    pushToast({ title: 'Class deleted', description: c.name });
+    if (teacher) deleteClass(c.id);
+    else leaveClass(c.id, me.id);
+    pushToast({ title: teacher ? 'Class deleted' : 'Left class', description: c.name });
   };
 
   return (
     <SettingsSection
       id="classes"
       title="Classes"
-      description="Add, edit, or reorder your classes. Order is used across the app."
+      description={
+        teacher
+          ? 'Create, edit or reorder your classes.'
+          : 'Join or leave classes, and choose the order they appear in.'
+      }
     >
       <ul className="divide-y divide-border rounded-md border border-border">
         {classes.length === 0 && (
@@ -45,8 +59,17 @@ export function ClassManager() {
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold">{c.name}</p>
               <p className="truncate text-xs text-muted">
-                {teachers.find((t) => t.id === c.teacherId)?.name ?? 'No teacher'} ·{' '}
-                {c.room || 'No room'}
+                {teacher ? (
+                  <>
+                    Code <span className="font-mono font-semibold text-fg">{c.joinCode}</span> ·{' '}
+                    {rosters[c.id]?.length ?? 0} students
+                  </>
+                ) : (
+                  <>
+                    {people.find((t) => t.id === c.teacherId)?.name ?? 'Teacher'} ·{' '}
+                    {c.room || 'No room'}
+                  </>
+                )}
               </p>
             </div>
             <div className="flex shrink-0 items-center">
@@ -68,39 +91,52 @@ export function ClassManager() {
               >
                 <ArrowDown className="h-4 w-4" />
               </IconButton>
+              {teacher && (
+                <IconButton
+                  size="sm"
+                  label={`Edit ${c.name}`}
+                  onClick={() => {
+                    setEditing(c);
+                    setFormOpen(true);
+                  }}
+                >
+                  <Pencil className="h-4 w-4" />
+                </IconButton>
+              )}
               <IconButton
                 size="sm"
-                label={`Edit ${c.name}`}
-                onClick={() => {
-                  setEditing(c);
-                  setOpen(true);
-                }}
-              >
-                <Pencil className="h-4 w-4" />
-              </IconButton>
-              <IconButton
-                size="sm"
-                label={`Delete ${c.name}`}
+                label={teacher ? `Delete ${c.name}` : `Leave ${c.name}`}
                 onClick={() => remove(c)}
                 className="hover:text-danger-text"
               >
-                <Trash2 className="h-4 w-4" />
+                {teacher ? <Trash2 className="h-4 w-4" /> : <LogOut className="h-4 w-4" />}
               </IconButton>
             </div>
           </li>
         ))}
       </ul>
-      <Button
-        variant="secondary"
-        leftIcon={<Plus className="h-4 w-4" />}
-        onClick={() => {
-          setEditing(null);
-          setOpen(true);
-        }}
-      >
-        Add class
-      </Button>
-      <ClassFormModal open={open} onClose={() => setOpen(false)} classItem={editing} />
+      {teacher ? (
+        <Button
+          variant="secondary"
+          leftIcon={<Plus className="h-4 w-4" />}
+          onClick={() => {
+            setEditing(null);
+            setFormOpen(true);
+          }}
+        >
+          Create class
+        </Button>
+      ) : (
+        <Button
+          variant="secondary"
+          leftIcon={<Plus className="h-4 w-4" />}
+          onClick={() => setJoinOpen(true)}
+        >
+          Join a class
+        </Button>
+      )}
+      <ClassFormModal open={formOpen} onClose={() => setFormOpen(false)} classItem={editing} />
+      <JoinClassModal open={joinOpen} onClose={() => setJoinOpen(false)} />
     </SettingsSection>
   );
 }

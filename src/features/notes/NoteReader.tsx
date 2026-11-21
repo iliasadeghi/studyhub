@@ -5,6 +5,7 @@ import { AArrowDown, AArrowUp, Bookmark, ListTree, Pencil, Printer, Trash2 } fro
 import type { ClassItem, Note } from '@/types';
 import { useNoteStore } from '@/stores/noteStore';
 import { useUIStore } from '@/stores/uiStore';
+import { useAuthStore } from '@/stores/authStore';
 import { cn } from '@/utils/cn';
 import { SubjectTag, Badge } from '@/components/ui/Badge';
 import { Button, IconButton } from '@/components/ui/Button';
@@ -35,6 +36,7 @@ export function NoteReader({ note, cls }: { note: Note; cls?: ClassItem }) {
   const fontScale = useNoteStore((s) => s.fontScale);
   const { toggleBookmark, setFontScale, markViewed, deleteNote } = useNoteStore.getState();
   const pushToast = useUIStore((s) => s.pushToast);
+  const meId = useAuthStore((s) => s.userId);
   const toc = extractToc(note.content);
 
   useEffect(() => {
@@ -56,7 +58,7 @@ export function NoteReader({ note, cls }: { note: Note; cls?: ClassItem }) {
             {cls && <SubjectTag color={cls.color}>{cls.name}</SubjectTag>}
             <span className="text-xs font-semibold text-muted">{note.unit}</span>
             <Badge tone={note.kind === 'teacher' ? 'accent' : 'success'}>
-              {note.kind === 'teacher' ? 'Teacher note' : 'My note'}
+              {note.kind === 'teacher' ? 'Class note' : 'Private note'}
             </Badge>
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3" data-print-hide>
@@ -98,7 +100,7 @@ export function NoteReader({ note, cls }: { note: Note; cls?: ClassItem }) {
               <IconButton label="Print note" size="sm" onClick={() => window.print()}>
                 <Printer className="h-4 w-4" />
               </IconButton>
-              {note.kind === 'mine' && (
+              {note.authorId === meId && (
                 <>
                   <IconButton label="Delete note" size="sm" onClick={remove}>
                     <Trash2 className="h-4 w-4" />

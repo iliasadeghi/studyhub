@@ -3,6 +3,7 @@ import { BookOpenText, FilePen, GraduationCap, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import type { Note } from '@/types';
 import { useNoteStore } from '@/stores/noteStore';
+import { useProfile } from '@/stores/authStore';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/Misc';
@@ -11,9 +12,11 @@ import { groupByUnit } from '@/features/notes/noteUtils';
 export function ClassNotesList({ classId, notes }: { classId: string; notes: Note[] }) {
   const navigate = useNavigate();
   const addNote = useNoteStore((s) => s.addNote);
+  const teacher = useProfile().role === 'teacher';
   const create = () => {
     const n = addNote({
       classId,
+      visibility: teacher ? 'class' : 'private',
       unit: notes[0]?.unit ?? 'General',
       title: 'Untitled note',
       content: '# Untitled note\n\n',
@@ -58,7 +61,7 @@ export function ClassNotesList({ classId, notes }: { classId: string; notes: Not
                         </p>
                       </div>
                       <Badge tone={n.kind === 'teacher' ? 'accent' : 'success'}>
-                        {n.kind === 'teacher' ? 'Teacher' : 'Mine'}
+                        {n.kind === 'teacher' ? 'Class note' : 'Private'}
                       </Badge>
                     </Link>
                   </li>

@@ -11,11 +11,14 @@ import { artBackground } from './art/pickArt';
 export function ClassCard({
   cls,
   teacher,
+  personLine,
   tasks,
   now,
 }: {
   cls: ClassItem;
   teacher?: Teacher;
+  /** Overrides the teacher line (e.g. "12 students · code 7F3A9C" for teachers) */
+  personLine?: string;
   tasks: Task[];
   now: Date;
 }) {
@@ -47,7 +50,7 @@ export function ClassCard({
           <div className="flex items-center gap-2">
             <dt className="sr-only">Teacher</dt>
             <User className="h-4 w-4 shrink-0" aria-hidden />
-            <dd className="truncate">{teacher?.name ?? 'No teacher set'}</dd>
+            <dd className="truncate">{personLine ?? teacher?.name ?? 'Teacher'}</dd>
           </div>
           <div className="flex items-center gap-2">
             <dt className="sr-only">Room</dt>

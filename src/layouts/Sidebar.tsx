@@ -1,22 +1,37 @@
 import { NavLink } from 'react-router-dom';
 import { PanelLeftClose, PanelLeftOpen, Plus } from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
-import { useSettingsStore } from '@/stores/settingsStore';
+import { useProfile } from '@/stores/authStore';
+import { useUnreadCount } from '@/hooks/useUnread';
 import { useTaskStore } from '@/stores/taskStore';
 import { useIsDesktop } from '@/hooks/useMediaQuery';
 import { isOverdue } from '@/utils/dates';
 import { cn } from '@/utils/cn';
 import { Avatar, Kbd } from '@/components/ui/Misc';
 import { Logo } from './Logo';
-import { NAV_ITEMS, SETTINGS_ITEM, type NavItem } from './nav';
+import { NAV_ITEMS, SETTINGS_ITEM, navLabel, type NavItem } from './nav';
 
-function NavEntry({ item, compact, badge }: { item: NavItem; compact: boolean; badge?: number }) {
+function NavEntry({
+  item,
+  label,
+  compact,
+  badge,
+  badgeLabel = 'overdue',
+  badgeTone = 'danger',
+}: {
+  item: NavItem;
+  label: string;
+  compact: boolean;
+  badge?: number;
+  badgeLabel?: string;
+  badgeTone?: 'danger' | 'accent';
+}) {
   const Icon = item.icon;
   return (
     <NavLink
       to={item.to}
       end={item.end}
-      title={compact ? item.label : undefined}
+      title={compact ? label : undefined}
       className={({ isActive }) =>
         cn(
           'relative flex h-10 items-center gap-3 rounded-md px-3 text-sm font-semibold transition-colors duration-150',
@@ -28,16 +43,19 @@ function NavEntry({ item, compact, badge }: { item: NavItem; compact: boolean; b
       }
     >
       <Icon className="h-[18px] w-[18px] shrink-0" aria-hidden />
-      <span className={cn(compact && 'sr-only')}>{item.label}</span>
+      <span className={cn(compact && 'sr-only')}>{label}</span>
       {!!badge && (
         <span
           className={cn(
-            'grid h-5 min-w-5 place-items-center rounded-full bg-danger px-1.5 text-[11px] font-bold text-white dark:text-[#1a0b0b]',
+            'grid h-5 min-w-5 place-items-center rounded-full px-1.5 text-[11px] font-bold',
+            badgeTone === 'danger'
+              ? 'bg-danger text-white dark:text-[#1a0b0b]'
+              : 'bg-accent text-accent-fg',
             compact ? 'absolute top-0 right-1' : 'ml-auto',
           )}
         >
           {badge}
-          <span className="sr-only"> overdue</span>
+          <span className="sr-only"> {badgeLabel}</span>
         </span>
       )}
     </NavLink>
@@ -50,9 +68,12 @@ export function Sidebar() {
   const expanded = useUIStore((s) => s.sidebarExpanded);
   const toggle = useUIStore((s) => s.toggleSidebar);
   const openTaskForm = useUIStore((s) => s.openTaskForm);
-  const name = useSettingsStore((s) => s.name) || 'Student';
-  const grade = useSettingsStore((s) => s.grade);
-  const avatarColor = useSettingsStore((s) => s.avatarColor);
+  const profile = useProfile();
+  const name = profile.fullName || 'You';
+  const avatarColor = profile.avatarColor;
+  const subtitle =
+    profile.role === 'teacher' ? 'Teacher' : profile.grade ? `Grade ${profile.grade}` : 'Student';
+  const unread = useUnreadCount();
   const overdue = useTaskStore((s) => s.tasks.filter((t) => isOverdue(t)).length);
   const compact = !isDesktop && !expanded;
 
@@ -107,14 +128,17 @@ export function Sidebar() {
             <NavEntry
               key={item.to}
               item={item}
+              label={navLabel(item, profile.role)}
               compact={compact}
-              badge={item.to === '/tasks' ? overdue : 0}
+              badge={item.to === '/tasks' ? overdue : item.to === '/messages' ? unread : 0}
+              badgeLabel={item.to === '/messages' ? 'unread' : 'overdue'}
+              badgeTone={item.to === '/messages' ? 'accent' : 'danger'}
             />
           ))}
         </nav>
 
         <div className={cn('space-y-1 border-t border-border py-3', compact ? 'px-4' : 'px-3')}>
-          <NavEntry item={SETTINGS_ITEM} compact={compact} />
+          <NavEntry item={SETTINGS_ITEM} label={SETTINGS_ITEM.label} compact={compact} />
           {!isDesktop && (
             <button
               type="button"
@@ -139,7 +163,7 @@ export function Sidebar() {
               <Avatar name={name} color={avatarColor} size="sm" />
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold">{name}</p>
-                <p className="text-xs text-muted">Grade {grade}</p>
+                <p className="text-xs text-muted">{subtitle}</p>
               </div>
             </div>
           )}

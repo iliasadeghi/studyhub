@@ -3,6 +3,8 @@ import { format, isSameDay } from 'date-fns';
 import type { CalendarEvent, ClassItem, SubjectColor, Task } from '@/types';
 import { useTaskStore } from '@/stores/taskStore';
 import { useEventStore } from '@/stores/eventStore';
+import { useTeacherStore } from '@/stores/teacherStore';
+import { useAuthStore } from '@/stores/authStore';
 import { useClassMap } from '@/stores/classStore';
 import { suggestStudyBlocks, type StudyBlock } from '@/utils/studyPlan';
 
@@ -25,6 +27,10 @@ export type CalendarItem =
       block: StudyBlock;
     };
 
+/** Calendar event ids for office-hour bookings start with this. */
+export const BOOKING_PREFIX = 'booking:';
+export const isBookingEvent = (id: string) => id.startsWith(BOOKING_PREFIX);
+
 export const dayKey = (d: Date) => format(d, 'yyyy-MM-dd');
 
 function colorOf(classId: string | null, classMap: Record<string, ClassItem>): SubjectColor | null {
@@ -34,8 +40,37 @@ function colorOf(classId: string | null, classMap: Record<string, ClassItem>): S
 /** Tasks, events and (optionally) suggested study blocks grouped by yyyy-MM-dd. */
 export function useCalendarItems(showStudyPlan: boolean, now: Date) {
   const tasks = useTaskStore((s) => s.tasks);
-  const events = useEventStore((s) => s.events);
+  const ownEvents = useEventStore((s) => s.events);
+  const bookings = useEventStore((s) => s.bookings);
+  const people = useTeacherStore((s) => s.teachers);
+  const me = useAuthStore((s) => s.userId);
   const classMap = useClassMap();
+
+  // Office-hour bookings show up as events for both the student and the teacher.
+  const events = useMemo<CalendarEvent[]>(
+    () => [
+      ...ownEvents,
+      ...bookings
+        .filter((b) => b.status === 'booked')
+        .map((b) => {
+          const otherId = b.studentId === me ? b.teacherId : b.studentId;
+          const other =
+            people.find((p) => p.id === otherId)?.name ??
+            (b.studentId === me ? 'teacher' : 'student');
+          return {
+            id: `${BOOKING_PREFIX}${b.id}`,
+            title: `Office hours: ${other}`,
+            start: b.start,
+            end: b.end,
+            classId: null,
+            teacherId: b.teacherId,
+            kind: 'office-hours' as const,
+            notes: [b.topic, b.location].filter(Boolean).join(' · '),
+          };
+        }),
+    ],
+    [ownEvents, bookings, people, me],
+  );
 
   return useMemo(() => {
     const map = new Map<string, CalendarItem[]>();

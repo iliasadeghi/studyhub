@@ -115,11 +115,11 @@ function PaletteBody({ onClose }: { onClose: () => void }) {
       })),
       ...teachers.map((t) => ({
         id: t.id,
-        group: 'Teachers',
+        group: 'People',
         label: t.name,
         hint: t.subjects.join(', '),
         icon: <UserRound className={ic} />,
-        run: go(`/teachers/${t.id}`),
+        run: go(`/messages/${t.id}`),
         keywords: t.subjects.join(' '),
       })),
     ];

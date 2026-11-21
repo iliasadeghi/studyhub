@@ -74,12 +74,10 @@ export default function CalendarPage() {
     const target = parseISO(String(e.over.id));
     if (dayKey(target) === dayKey(item.date)) return;
     if (item.kind === 'task') {
-      useTaskStore
-        .getState()
-        .updateTask(item.task.id, {
-          dueAt: moveToDay(item.task.dueAt, target),
-          quadrantOverride: null,
-        });
+      useTaskStore.getState().updateTask(item.task.id, {
+        dueAt: moveToDay(item.task.dueAt, target),
+        quadrantOverride: null,
+      });
     } else if (item.kind === 'event') {
       const ev = item.event;
       useEventStore

@@ -5,17 +5,20 @@ import { PageHeader } from '@/components/ui/Misc';
 import { AppearanceSection, PreferencesSection, ProfileSection } from './ProfileSections';
 import { ClassManager } from './ClassManager';
 import { DataSection } from './DataSection';
-
-const SECTIONS = [
-  { id: 'profile', label: 'Profile' },
-  { id: 'appearance', label: 'Appearance' },
-  { id: 'preferences', label: 'Preferences' },
-  { id: 'classes', label: 'Classes' },
-  { id: 'data', label: 'Data' },
-];
+import { OfficeHoursSection } from './OfficeHoursSection';
+import { useProfile } from '@/stores/authStore';
 
 export default function SettingsPage() {
   const setShortcutsOpen = useUIStore((s) => s.setShortcutsOpen);
+  const teacher = useProfile().role === 'teacher';
+  const SECTIONS = [
+    { id: 'profile', label: 'Profile' },
+    ...(teacher ? [{ id: 'office-hours', label: 'Office hours' }] : []),
+    { id: 'appearance', label: 'Appearance' },
+    { id: 'preferences', label: 'Preferences' },
+    { id: 'classes', label: 'Classes' },
+    { id: 'account', label: 'Account & data' },
+  ];
   return (
     <>
       <PageHeader
@@ -47,12 +50,13 @@ export default function SettingsPage() {
         </nav>
         <div className="max-w-3xl space-y-5">
           <ProfileSection />
+          {teacher && <OfficeHoursSection />}
           <AppearanceSection />
           <PreferencesSection />
           <ClassManager />
           <DataSection />
           <p className="pb-4 text-center text-xs text-subtle">
-            StudyHub · runs entirely in your browser · no account needed
+            Theme, accent and view preferences are saved on this device.
           </p>
         </div>
       </div>

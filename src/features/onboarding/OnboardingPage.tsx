@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowLeft,
@@ -8,89 +8,54 @@ import {
   CheckSquare,
   MessageCircle,
   Rocket,
-  Sparkles,
 } from 'lucide-react';
-import type { ClassItem, Teacher } from '@/types';
-import { useSettingsStore } from '@/stores/settingsStore';
-import { resetToSampleData, startFresh } from '@/services/storage';
-import { uid } from '@/utils/id';
+import { useAuthStore, useProfile } from '@/stores/authStore';
+import { useClassStore } from '@/stores/classStore';
+import { supabase } from '@/lib/supabase';
 import { cn } from '@/utils/cn';
 import { Button } from '@/components/ui/Button';
 import { Field, Input, Select } from '@/components/ui/Field';
 import { Logo } from '@/layouts/Logo';
-import { ClassesStep } from './ClassesStep';
-import { newDraft, type DraftClass } from './draft';
+import { ColorPicker, ClassForm } from '@/features/classes/ClassFormModal';
+import { JoinClassForm } from '@/features/classes/JoinClassForm';
+import type { SubjectColor } from '@/types';
 
 const STEPS = ['About you', 'Your classes', 'All set'];
 
+/** First-time setup after sign-up. */
 export default function OnboardingPage() {
   const navigate = useNavigate();
-  const settings = useSettingsStore();
+  const profile = useProfile();
+  const classes = useClassStore((s) => s.classes);
+  const teacher = profile.role === 'teacher';
   const [step, setStep] = useState(0);
-  const [name, setName] = useState(settings.name);
-  const [grade, setGrade] = useState(settings.grade);
-  const [drafts, setDrafts] = useState<DraftClass[]>([newDraft()]);
+  const [name, setName] = useState(profile.fullName);
+  const [grade, setGrade] = useState(profile.grade ?? '10');
+  const [color, setColor] = useState<SubjectColor>(profile.avatarColor);
   const [error, setError] = useState('');
-  const [entered] = useState(() => settings.onboarded);
+  const [busy, setBusy] = useState(false);
 
-  if (entered) return <Navigate to="/" replace />;
-
-  const valid = drafts.filter((d) => d.name.trim());
-
-  const explore = () => {
-    resetToSampleData();
-    settings.update({ name: name.trim() || 'Alex', grade, onboarded: true });
-    navigate('/');
-  };
-
-  const finish = () => {
-    const teachers: Teacher[] = [];
-    const classes: ClassItem[] = valid.map((d, i) => {
-      let teacherId: string | null = null;
-      if (d.teacher.trim()) {
-        const existing = teachers.find(
-          (t) => t.name.toLowerCase() === d.teacher.trim().toLowerCase(),
-        );
-        const t = existing ?? {
-          id: uid('teacher'),
-          name: d.teacher.trim(),
-          subjects: [],
-          email: '',
-          officeHours: [],
-          preferredContact: 'email' as const,
-          bio: '',
-        };
-        t.subjects.push(d.name.trim());
-        if (!existing) teachers.push(t);
-        teacherId = t.id;
-      }
-      return {
-        id: uid('class'),
-        name: d.name.trim(),
-        subject: d.name.trim(),
-        teacherId,
-        color: d.color,
-        room: d.room.trim(),
-        schedule: {
-          days: [1, 2, 3, 4, 5],
-          start: `${8 + i}:00`.padStart(5, '0'),
-          end: `${8 + i}:50`.padStart(5, '0'),
-        },
-      };
+  const saveProfile = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return setError('What should we call you?');
+    setBusy(true);
+    const ok = await useAuthStore.getState().updateProfile({
+      fullName: name.trim(),
+      grade: teacher ? null : grade,
+      avatarColor: color,
     });
-    startFresh(classes, teachers);
-    settings.update({ name: name.trim(), grade, onboarded: true });
-    navigate('/');
+    setBusy(false);
+    if (ok) {
+      setError('');
+      setStep(1);
+    }
   };
 
-  const next = (e?: FormEvent) => {
-    e?.preventDefault();
-    if (step === 0 && !name.trim()) return setError('What should we call you?');
-    if (step === 1 && valid.length === 0)
-      return setError('Add at least one class — or explore with sample data.');
-    setError('');
-    if (step === 2) return finish();
-    setStep((s) => s + 1);
+  const finish = async () => {
+    setBusy(true);
+    const ok = await useAuthStore.getState().updateProfile({ onboarded: true });
+    setBusy(false);
+    if (ok) navigate('/', { replace: true });
   };
 
   return (
@@ -110,18 +75,14 @@ export default function OnboardingPage() {
           <Logo />
           <button
             type="button"
-            onClick={explore}
-            className="rounded-sm text-sm font-semibold text-accent-text hover:underline"
+            onClick={() => void supabase.auth.signOut({ scope: 'local' })}
+            className="rounded-sm text-sm font-semibold text-muted hover:text-fg"
           >
-            Explore with sample data →
+            Sign out
           </button>
         </div>
 
-        <form
-          onSubmit={next}
-          className="rounded-xl border border-border bg-surface p-6 shadow-pop sm:p-8"
-          noValidate
-        >
+        <div className="rounded-xl border border-border bg-surface p-6 shadow-pop sm:p-8">
           <ol className="mb-6 flex items-center gap-2" aria-label="Progress">
             {STEPS.map((s, i) => (
               <li
@@ -153,70 +114,134 @@ export default function OnboardingPage() {
               transition={{ duration: 0.2 }}
             >
               {step === 0 && (
-                <div className="space-y-5">
+                <form onSubmit={(e) => void saveProfile(e)} className="space-y-5" noValidate>
                   <div>
                     <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">
                       Welcome to StudyHub 👋
                     </h1>
                     <p className="mt-2 text-muted">
-                      Your tasks, notes, classes and teachers — organized in one calm place. Let’s
-                      set you up in under a minute.
+                      {teacher
+                        ? 'Set up your teacher profile. Your students will see your name and color.'
+                        : 'Let’s set up your profile. It takes less than a minute.'}
                     </p>
                   </div>
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-[2fr_1fr]">
-                    <Field label="What’s your first name?">
+                  <div className={cn('grid gap-4', !teacher && 'sm:grid-cols-[2fr_1fr]')}>
+                    <Field label={teacher ? 'Name students will see' : 'Your name'}>
                       {(id) => (
                         <Input
                           id={id}
-                          data-autofocus
                           autoFocus
                           value={name}
                           onChange={(e) => {
                             setName(e.target.value);
                             setError('');
                           }}
-                          placeholder="e.g. Maya"
-                          autoComplete="given-name"
+                          placeholder={teacher ? 'Ms. Rivera' : 'Maya'}
                           className="h-12 text-base"
                         />
                       )}
                     </Field>
-                    <Field label="Grade">
-                      {(id) => (
-                        <Select
-                          id={id}
-                          value={grade}
-                          onChange={(e) => setGrade(e.target.value)}
-                          className="h-12"
-                        >
-                          {['9', '10', '11', '12'].map((g) => (
-                            <option key={g} value={g}>
-                              Grade {g}
-                            </option>
-                          ))}
-                        </Select>
-                      )}
-                    </Field>
+                    {!teacher && (
+                      <Field label="Grade">
+                        {(id) => (
+                          <Select
+                            id={id}
+                            value={grade}
+                            onChange={(e) => setGrade(e.target.value)}
+                            className="h-12"
+                          >
+                            {['9', '10', '11', '12'].map((g) => (
+                              <option key={g} value={g}>
+                                Grade {g}
+                              </option>
+                            ))}
+                          </Select>
+                        )}
+                      </Field>
+                    )}
                   </div>
-                </div>
+                  <ColorPicker legend="Profile color" value={color} onChange={setColor} />
+                  {error && (
+                    <p role="alert" className="text-sm font-medium text-danger-text">
+                      {error}
+                    </p>
+                  )}
+                  <div className="flex justify-end pt-2">
+                    <Button
+                      type="submit"
+                      size="lg"
+                      disabled={busy}
+                      rightIcon={<ArrowRight className="h-4 w-4" />}
+                    >
+                      Continue
+                    </Button>
+                  </div>
+                </form>
               )}
+
               {step === 1 && (
                 <div className="space-y-5">
                   <div>
-                    <h1 className="text-2xl font-extrabold tracking-tight">Add your classes</h1>
+                    <h1 className="text-2xl font-extrabold tracking-tight">
+                      {teacher ? 'Create your first class' : 'Join your classes'}
+                    </h1>
                     <p className="mt-1 text-muted">
-                      Each class gets its own color. You can change everything later in Settings.
+                      {teacher
+                        ? 'You’ll get a join code to share with your students. You can add more classes later.'
+                        : 'Enter the code your teacher shared. You can join more classes later.'}
                     </p>
                   </div>
-                  <ClassesStep
-                    value={drafts}
-                    onChange={(v) => {
-                      setDrafts(v);
-                      setError('');
-                    }}
-                  />
+                  {classes.length > 0 && (
+                    <ul className="flex flex-wrap gap-2" aria-label="Your classes">
+                      {classes.map((c) => (
+                        <li
+                          key={c.id}
+                          className="rounded-full bg-accent-soft px-3 py-1 text-sm font-semibold text-accent-text"
+                        >
+                          {c.name}
+                          {teacher && (
+                            <span className="ml-2 font-mono text-xs opacity-80">{c.joinCode}</span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {teacher ? (
+                    <>
+                      <ClassForm
+                        key={classes.length}
+                        initial={null}
+                        formId="onboarding-class"
+                        onDone={() => undefined}
+                      />
+                      <div className="flex justify-end">
+                        <Button type="submit" form="onboarding-class" variant="secondary">
+                          {classes.length ? 'Create another class' : 'Create class'}
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <JoinClassForm autoFocus />
+                  )}
+                  <div className="flex items-center justify-between border-t border-border pt-5">
+                    <Button
+                      variant="ghost"
+                      leftIcon={<ArrowLeft className="h-4 w-4" />}
+                      onClick={() => setStep(0)}
+                    >
+                      Back
+                    </Button>
+                    <Button
+                      size="lg"
+                      onClick={() => setStep(2)}
+                      rightIcon={<ArrowRight className="h-4 w-4" />}
+                    >
+                      {classes.length ? 'Continue' : 'Skip for now'}
+                    </Button>
+                  </div>
                 </div>
               )}
+
               {step === 2 && (
                 <div className="space-y-5 text-center">
                   <motion.div
@@ -229,31 +254,47 @@ export default function OnboardingPage() {
                   </motion.div>
                   <div>
                     <h1 className="text-2xl font-extrabold tracking-tight">
-                      You’re all set, {name.trim()}!
+                      You’re all set, {name.trim().split(' ')[0]}!
                     </h1>
-                    <p className="mt-1 text-muted">
-                      {valid.length} class{valid.length === 1 ? '' : 'es'} ready to go. Here’s what
-                      you can do:
-                    </p>
+                    <p className="mt-1 text-muted">Here’s what you can do next:</p>
                   </div>
                   <ul className="grid gap-3 text-left sm:grid-cols-3">
-                    {[
-                      {
-                        icon: CheckSquare,
-                        title: 'Add tasks',
-                        text: 'Press N anytime. We’ll rank what to do first.',
-                      },
-                      {
-                        icon: CalendarDays,
-                        title: 'Plan your week',
-                        text: 'Drag tasks on the calendar; get study plans.',
-                      },
-                      {
-                        icon: MessageCircle,
-                        title: 'Ask teachers',
-                        text: 'Message, email or book office hours.',
-                      },
-                    ].map(({ icon: Icon, title, text }) => (
+                    {(teacher
+                      ? [
+                          {
+                            icon: CheckSquare,
+                            title: 'Share your code',
+                            text: 'Students join your class with it.',
+                          },
+                          {
+                            icon: CalendarDays,
+                            title: 'Office hours',
+                            text: 'Set them in Settings so students can book.',
+                          },
+                          {
+                            icon: MessageCircle,
+                            title: 'Answer questions',
+                            text: 'Messages arrive in real time.',
+                          },
+                        ]
+                      : [
+                          {
+                            icon: CheckSquare,
+                            title: 'Add tasks',
+                            text: 'Press N anytime. We’ll rank what to do first.',
+                          },
+                          {
+                            icon: CalendarDays,
+                            title: 'Plan your week',
+                            text: 'Drag tasks on the calendar; get study plans.',
+                          },
+                          {
+                            icon: MessageCircle,
+                            title: 'Ask teachers',
+                            text: 'Message them and get replies in real time.',
+                          },
+                        ]
+                    ).map(({ icon: Icon, title, text }) => (
                       <li key={title} className="rounded-md border border-border p-3">
                         <Icon className="mb-2 h-5 w-5 text-accent-text" aria-hidden />
                         <p className="text-sm font-bold">{title}</p>
@@ -261,41 +302,23 @@ export default function OnboardingPage() {
                       </li>
                     ))}
                   </ul>
+                  <div className="flex items-center justify-between pt-2">
+                    <Button
+                      variant="ghost"
+                      leftIcon={<ArrowLeft className="h-4 w-4" />}
+                      onClick={() => setStep(1)}
+                    >
+                      Back
+                    </Button>
+                    <Button size="lg" disabled={busy} onClick={() => void finish()}>
+                      Go to my dashboard
+                    </Button>
+                  </div>
                 </div>
               )}
             </motion.div>
           </AnimatePresence>
-
-          {error && (
-            <p role="alert" className="mt-4 text-sm font-medium text-danger-text">
-              {error}
-            </p>
-          )}
-
-          <div className="mt-8 flex items-center justify-between gap-3">
-            {step > 0 ? (
-              <Button
-                variant="ghost"
-                leftIcon={<ArrowLeft className="h-4 w-4" />}
-                onClick={() => setStep((s) => s - 1)}
-              >
-                Back
-              </Button>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 text-xs text-muted">
-                <Sparkles className="h-3.5 w-3.5" aria-hidden /> No account needed — saved on this
-                device
-              </span>
-            )}
-            <Button
-              type="submit"
-              size="lg"
-              rightIcon={step < 2 ? <ArrowRight className="h-4 w-4" /> : undefined}
-            >
-              {step === 2 ? 'Go to my dashboard' : 'Continue'}
-            </Button>
-          </div>
-        </form>
+        </div>
       </main>
     </div>
   );
