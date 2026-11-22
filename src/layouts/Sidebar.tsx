@@ -9,7 +9,7 @@ import { isOverdue } from '@/utils/dates';
 import { cn } from '@/utils/cn';
 import { Avatar, Kbd } from '@/components/ui/Misc';
 import { Logo } from './Logo';
-import { NAV_ITEMS, SETTINGS_ITEM, navLabel, type NavItem } from './nav';
+import { SETTINGS_ITEM, navItemsFor, navLabel, type NavItem } from './nav';
 
 function NavEntry({
   item,
@@ -71,8 +71,14 @@ export function Sidebar() {
   const profile = useProfile();
   const name = profile.fullName || 'You';
   const avatarColor = profile.avatarColor;
-  const subtitle =
-    profile.role === 'teacher' ? 'Teacher' : profile.grade ? `Grade ${profile.grade}` : 'Student';
+  const admin = profile.role === 'admin';
+  const subtitle = admin
+    ? 'School admin'
+    : profile.role === 'teacher'
+      ? 'Teacher'
+      : profile.grade
+        ? `Grade ${profile.grade}`
+        : 'Student';
   const unread = useUnreadCount();
   const overdue = useTaskStore((s) => s.tasks.filter((t) => isOverdue(t)).length);
   const compact = !isDesktop && !expanded;
@@ -98,25 +104,27 @@ export function Sidebar() {
           <Logo compact={compact} />
         </div>
 
-        <div className={cn('pb-2', compact ? 'px-4' : 'px-3')}>
-          <button
-            type="button"
-            onClick={() => openTaskForm()}
-            aria-label={compact ? 'New task' : undefined}
-            title={compact ? 'New task (N)' : undefined}
-            className="flex h-10 w-full items-center justify-center gap-2 rounded-md bg-accent px-3 text-sm font-semibold text-accent-fg shadow-soft transition-all hover:bg-accent-hover active:scale-[0.98]"
-          >
-            <Plus className="h-4 w-4 shrink-0" aria-hidden />
-            {!compact && (
-              <>
-                <span>New task</span>
-                <span className="ml-auto opacity-80">
-                  <Kbd>N</Kbd>
-                </span>
-              </>
-            )}
-          </button>
-        </div>
+        {!admin && (
+          <div className={cn('pb-2', compact ? 'px-4' : 'px-3')}>
+            <button
+              type="button"
+              onClick={() => openTaskForm()}
+              aria-label={compact ? 'New task' : undefined}
+              title={compact ? 'New task (N)' : undefined}
+              className="flex h-10 w-full items-center justify-center gap-2 rounded-md bg-accent px-3 text-sm font-semibold text-accent-fg shadow-soft transition-all hover:bg-accent-hover active:scale-[0.98]"
+            >
+              <Plus className="h-4 w-4 shrink-0" aria-hidden />
+              {!compact && (
+                <>
+                  <span>New task</span>
+                  <span className="ml-auto opacity-80">
+                    <Kbd>N</Kbd>
+                  </span>
+                </>
+              )}
+            </button>
+          </div>
+        )}
 
         <nav
           className={cn(
@@ -124,7 +132,7 @@ export function Sidebar() {
             compact ? 'px-4' : 'px-3',
           )}
         >
-          {NAV_ITEMS.map((item) => (
+          {navItemsFor(profile.role).map((item) => (
             <NavEntry
               key={item.to}
               item={item}

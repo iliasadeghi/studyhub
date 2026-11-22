@@ -14,6 +14,7 @@ import { Avatar, EmptyState, PageHeader } from '@/components/ui/Misc';
 import { Button } from '@/components/ui/Button';
 import { BookingModal } from './BookingModal';
 import { CONTACT_LABELS } from './teacherUtils';
+import { useFeature } from '@/stores/schoolStore';
 
 export default function TeachersPage() {
   const teachers = useTeacherStore((s) => s.teachers);
@@ -24,6 +25,7 @@ export default function TeachersPage() {
   const label = teacherView ? 'students' : 'teachers';
   const [query, setQuery] = useState('');
   const [booking, setBooking] = useState<Teacher | null>(null);
+  const bookingOn = useFeature('office_hours');
   const q = query.trim().toLowerCase();
   const visible = teachers.filter(
     (t) => !q || `${t.name} ${t.subjects.join(' ')}`.toLowerCase().includes(q),
@@ -170,7 +172,7 @@ export default function TeachersPage() {
                       <Mail className="h-4 w-4" aria-hidden /> Email
                     </a>
                   )}
-                  {!teacherView && t.officeHours.length > 0 && (
+                  {!teacherView && bookingOn && t.officeHours.length > 0 && (
                     <Button
                       size="sm"
                       variant="secondary"

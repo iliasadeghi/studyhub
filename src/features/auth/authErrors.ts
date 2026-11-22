@@ -10,6 +10,8 @@ export function authErrorMessage(message: string): string {
   if (m.includes('rate limit') || m.includes('too many'))
     return 'Too many attempts. Please wait a minute and try again.';
   if (m.includes('password should be')) return 'Choose a stronger password: at least 8 characters.';
+  if (m.includes('database error saving new user'))
+    return 'Sign-up isn’t available for this email. Check the school’s sign-up rules or ask your school admin.';
   if (m.includes('failed to fetch'))
     return 'Can’t reach the server. Check your internet connection.';
   return message;

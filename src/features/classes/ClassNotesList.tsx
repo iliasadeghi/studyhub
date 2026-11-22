@@ -8,12 +8,17 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/Misc';
 import { groupByUnit } from '@/features/notes/noteUtils';
+import { noteBlockedReason } from '@/stores/schoolStore';
+import { toast } from '@/stores/uiStore';
 
 export function ClassNotesList({ classId, notes }: { classId: string; notes: Note[] }) {
   const navigate = useNavigate();
   const addNote = useNoteStore((s) => s.addNote);
-  const teacher = useProfile().role === 'teacher';
+  const role = useProfile().role;
+  const teacher = role === 'teacher';
   const create = () => {
+    const blocked = noteBlockedReason(role);
+    if (blocked) return toast({ title: 'Notes are off', description: blocked });
     const n = addNote({
       classId,
       visibility: teacher ? 'class' : 'private',

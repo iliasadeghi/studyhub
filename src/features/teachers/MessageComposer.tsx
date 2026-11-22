@@ -1,10 +1,12 @@
 import { useState, type FormEvent } from 'react';
-import { FileText, Send } from 'lucide-react';
+import { FileText, Lock, Send } from 'lucide-react';
 import type { Contact } from '@/types';
 import { MESSAGE_TEMPLATES, firstName, messageService } from '@/services/messages';
 import { useProfile } from '@/stores/authStore';
 import { Menu } from '@/components/ui/Menu';
 import { Button } from '@/components/ui/Button';
+import { useFeature } from '@/stores/schoolStore';
+import { useTeacherStore } from '@/stores/teacherStore';
 
 interface Props {
   contact: Contact;
@@ -17,6 +19,14 @@ export function MessageComposer({ contact, onTyping }: Props) {
   const [body, setBody] = useState('');
   const className = contact.subjects[0] ?? 'class';
   const templates = MESSAGE_TEMPLATES.filter((t) => t.for === me.role);
+  const messaging = useFeature('messaging');
+  const studentStart = useFeature('student_start');
+  const hasConversation = useTeacherStore((s) => Boolean(s.conversations[contact.id]));
+  const blocked = !messaging
+    ? 'Messaging is turned off by your school right now. You can still read earlier messages.'
+    : me.role === 'student' && !studentStart && !hasConversation
+      ? `Your school lets teachers start conversations. You can reply once ${contact.name} messages you.`
+      : '';
 
   const send = (e?: FormEvent) => {
     e?.preventDefault();
@@ -34,6 +44,15 @@ export function MessageComposer({ contact, onTyping }: Props) {
         className,
       }),
     );
+
+  if (blocked) {
+    return (
+      <p className="flex items-start gap-2 border-t border-border bg-surface p-4 text-sm text-muted">
+        <Lock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+        {blocked}
+      </p>
+    );
+  }
 
   return (
     <form onSubmit={send} className="border-t border-border bg-surface p-3">

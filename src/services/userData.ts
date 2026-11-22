@@ -163,7 +163,8 @@ export async function loadUserData(profile: Profile): Promise<void> {
   useTaskStore.getState().hydrate(taskRows.map(taskFromRow));
   useEventStore.getState().hydrate(eventRows.map(eventFromRow), bookingRows.map(bookingFromRow));
   useNoteStore.getState().hydrate({
-    notes: noteRows.map(noteFromRow),
+    // Notes of archived classes stay hidden with their class.
+    notes: noteRows.filter((n) => classIds.includes(n.class_id)).map(noteFromRow),
     bookmarks: viewRows.filter((v) => v.bookmarked).map((v) => v.note_id),
     lastViewed: Object.fromEntries(
       viewRows.filter((v) => v.last_viewed).map((v) => [v.note_id, v.last_viewed as string]),

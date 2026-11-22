@@ -17,7 +17,8 @@ import { useNoteStore } from '@/stores/noteStore';
 import { useTeacherStore } from '@/stores/teacherStore';
 import { useClassStore } from '@/stores/classStore';
 import { switchTheme } from '@/utils/themeTransition';
-import { NAV_ITEMS, SETTINGS_ITEM } from '@/layouts/nav';
+import { SETTINGS_ITEM, navItemsFor } from '@/layouts/nav';
+import { useAuthStore } from '@/stores/authStore';
 import { cn } from '@/utils/cn';
 import { formatDue } from '@/utils/dates';
 import { Modal } from './ui/Modal';
@@ -42,19 +43,24 @@ function PaletteBody({ onClose }: { onClose: () => void }) {
   const teachers = useTeacherStore((s) => s.teachers);
   const classes = useClassStore((s) => s.classes);
   const ui = useUIStore.getState();
+  const role = useAuthStore((s) => s.profile?.role);
 
   const commands = useMemo<Command[]>(() => {
     const go = (to: string) => () => navigate(to);
     const ic = 'h-4 w-4';
     return [
-      {
-        id: 'new-task',
-        group: 'Actions',
-        label: 'New task',
-        icon: <Plus className={ic} />,
-        run: () => ui.openTaskForm(),
-        keywords: 'add create homework',
-      },
+      ...(role === 'admin'
+        ? []
+        : [
+            {
+              id: 'new-task',
+              group: 'Actions',
+              label: 'New task',
+              icon: <Plus className={ic} />,
+              run: () => ui.openTaskForm(),
+              keywords: 'add create homework',
+            },
+          ]),
       {
         id: 'theme',
         group: 'Actions',
@@ -77,7 +83,7 @@ function PaletteBody({ onClose }: { onClose: () => void }) {
         run: () => ui.setShortcutsOpen(true),
         keywords: 'help keys',
       },
-      ...[...NAV_ITEMS, SETTINGS_ITEM].map((n) => ({
+      ...[...navItemsFor(role), SETTINGS_ITEM].map((n) => ({
         id: `page-${n.to}`,
         group: 'Pages',
         label: n.label,
@@ -123,7 +129,7 @@ function PaletteBody({ onClose }: { onClose: () => void }) {
         keywords: t.subjects.join(' '),
       })),
     ];
-  }, [tasks, notes, classes, teachers, navigate, ui]);
+  }, [tasks, notes, classes, teachers, navigate, ui, role]);
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();

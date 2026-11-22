@@ -6,7 +6,7 @@ import { Modal } from '@/components/ui/Modal';
 import { useUIStore } from '@/stores/uiStore';
 import { useProfile } from '@/stores/authStore';
 import { useUnreadCount } from '@/hooks/useUnread';
-import { MOBILE_PRIMARY, NAV_ITEMS, SETTINGS_ITEM, navLabel } from './nav';
+import { SETTINGS_ITEM, mobilePrimaryFor, navItemsFor, navLabel } from './nav';
 
 /** Bottom tab bar for phones (<768px). */
 export function MobileNav() {
@@ -15,8 +15,10 @@ export function MobileNav() {
   const setShortcutsOpen = useUIStore((s) => s.setShortcutsOpen);
   const role = useProfile().role;
   const unread = useUnreadCount();
-  const primary = NAV_ITEMS.filter((i) => MOBILE_PRIMARY.includes(i.to));
-  const secondary = [...NAV_ITEMS.filter((i) => !MOBILE_PRIMARY.includes(i.to)), SETTINGS_ITEM];
+  const items = navItemsFor(role);
+  const primaryPaths = mobilePrimaryFor(role);
+  const primary = items.filter((i) => primaryPaths.includes(i.to));
+  const secondary = [...items.filter((i) => !primaryPaths.includes(i.to)), SETTINGS_ITEM];
   const moreActive = secondary.some((i) => location.pathname.startsWith(i.to));
 
   const tab =

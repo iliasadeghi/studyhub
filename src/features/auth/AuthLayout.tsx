@@ -1,7 +1,8 @@
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { CalendarDays, CheckSquare, MessageCircle, ShieldCheck } from 'lucide-react';
 import { Logo } from '@/layouts/Logo';
 import { isSupabaseConfigured } from '@/lib/supabase';
+import { useSchoolName, useSchoolStore } from '@/stores/schoolStore';
 
 const FEATURES = [
   { icon: CheckSquare, text: 'Know exactly what to do first with smart priorities' },
@@ -21,6 +22,11 @@ export function AuthLayout({
   children: ReactNode;
   footer?: ReactNode;
 }) {
+  const schoolName = useSchoolName();
+  const loadPublic = useSchoolStore((s) => s.loadPublic);
+  useEffect(() => {
+    if (isSupabaseConfigured) void loadPublic();
+  }, [loadPublic]);
   return (
     <div className="grid min-h-dvh lg:grid-cols-[1.05fr_1fr]">
       <aside
@@ -37,7 +43,7 @@ export function AuthLayout({
         />
         <div className="relative flex items-center gap-2.5 text-lg font-extrabold">
           <span className="grid h-9 w-9 place-items-center rounded-md bg-white/15">🎓</span>{' '}
-          StudyHub
+          {schoolName}
         </div>
         <div className="relative max-w-md">
           <h2 className="text-4xl leading-tight font-extrabold tracking-tight">

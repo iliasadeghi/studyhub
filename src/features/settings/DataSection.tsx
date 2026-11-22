@@ -149,6 +149,7 @@ function DeleteAccountModal({ open, onClose }: { open: boolean; onClose: () => v
 }
 
 export function DataSection() {
+  const admin = useProfile().role === 'admin';
   const [pwOpen, setPwOpen] = useState(false);
   const [delOpen, setDelOpen] = useState(false);
   const pushToast = useUIStore((s) => s.pushToast);
@@ -185,20 +186,22 @@ export function DataSection() {
           Sign out
         </Button>
       </div>
-      <div className="rounded-md border border-danger/30 bg-danger-soft/50 p-4">
-        <p className="text-sm font-semibold">Danger zone</p>
-        <p className="mt-0.5 mb-3 text-xs text-muted">
-          Permanently delete your account and everything in it.
-        </p>
-        <Button
-          variant="danger"
-          size="sm"
-          leftIcon={<Trash2 className="h-4 w-4" />}
-          onClick={() => setDelOpen(true)}
-        >
-          Delete account
-        </Button>
-      </div>
+      {!admin && (
+        <div className="rounded-md border border-danger/30 bg-danger-soft/50 p-4">
+          <p className="text-sm font-semibold">Danger zone</p>
+          <p className="mt-0.5 mb-3 text-xs text-muted">
+            Permanently delete your account and everything in it.
+          </p>
+          <Button
+            variant="danger"
+            size="sm"
+            leftIcon={<Trash2 className="h-4 w-4" />}
+            onClick={() => setDelOpen(true)}
+          >
+            Delete account
+          </Button>
+        </div>
+      )}
       <ChangePasswordModal open={pwOpen} onClose={() => setPwOpen(false)} />
       <DeleteAccountModal open={delOpen} onClose={() => setDelOpen(false)} />
     </SettingsSection>

@@ -10,17 +10,18 @@ A calm, modern organizer for high school students and their teachers. Students t
 
 ## Features
 
-| Area             | Highlights                                                                                                                                                                                                              |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Accounts**     | Email/password and magic-link sign-in. Sign up as a **student** or **teacher**. Email confirmation, password reset, change password, delete account                                                                     |
-| **Dashboards**   | **Students:** Focus Now (top 3 by priority score), today and next 7 days, weekly progress ring, streak, workload by class. **Teachers:** classes with join codes, student counts, unread messages, office-hour bookings |
-| **Classes**      | Teachers create classes and share a 6-character **join code**; students join with it. Roster management, subject artwork, leave/remove                                                                                  |
-| **Messaging**    | Real-time student↔teacher chat. Inbox with unread badges, "typing…" indicator, online presence, Delivered/Seen receipts, message templates, toasts for new messages                                                     |
-| **Tasks**        | Personal tasks with subtasks and links. List / Kanban / Eisenhower matrix views with drag-and-drop. Smart priority score (deadline, importance, type, effort)                                                           |
-| **Calendar**     | Month/week views, drag to reschedule, study-plan suggestions, office-hour bookings                                                                                                                                      |
-| **Notes**        | Teachers publish **class notes**; everyone keeps **private notes**. Markdown editor with live preview, search, bookmarks, table of contents, print styles                                                               |
-| **Office hours** | Teachers set weekly windows; students book 15-minute slots that show on both calendars                                                                                                                                  |
-| **Global**       | Command palette (`Ctrl/⌘ K`), keyboard shortcuts (`?`), light/dark themes with a circular reveal, accent colors, fully responsive, accessible                                                                           |
+| Area             | Highlights                                                                                                                                                                                                                                                                                                                                                                                                |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Accounts**     | Email/password and magic-link sign-in. Sign up as a **student** or **teacher**. Email confirmation, password reset, change password, delete account                                                                                                                                                                                                                                                       |
+| **Dashboards**   | **Students:** Focus Now (top 3 by priority score), today and next 7 days, weekly progress ring, streak, workload by class. **Teachers:** classes with join codes, student counts, unread messages, office-hour bookings                                                                                                                                                                                   |
+| **Classes**      | Teachers create classes and share a 6-character **join code**; students join with it. Roster management, subject artwork, leave/remove                                                                                                                                                                                                                                                                    |
+| **Messaging**    | Real-time student↔teacher chat. Inbox with unread badges, "typing…" indicator, online presence, Delivered/Seen receipts, message templates, toasts for new messages                                                                                                                                                                                                                                       |
+| **Tasks**        | Personal tasks with subtasks and links. List / Kanban / Eisenhower matrix views with drag-and-drop. Smart priority score (deadline, importance, type, effort)                                                                                                                                                                                                                                             |
+| **Calendar**     | Month/week views, drag to reschedule, study-plan suggestions, office-hour bookings                                                                                                                                                                                                                                                                                                                        |
+| **Notes**        | Teachers publish **class notes**; everyone keeps **private notes**. Markdown editor with live preview, search, bookmarks, table of contents, print styles                                                                                                                                                                                                                                                 |
+| **Office hours** | Teachers set weekly windows; students book 15-minute slots that show on both calendars                                                                                                                                                                                                                                                                                                                    |
+| **School admin** | One admin account (can never be signed up for). Overview, user management (approve teachers, change roles, suspend, archive, password-reset email), every class (reassign, rosters, join codes, archive), school name/color, announcement banner, sign-up policy (open / school domain / closed), feature switches, read-only conversation view (every view logged), archive and an append-only audit log |
+| **Global**       | Command palette (`Ctrl/⌘ K`), keyboard shortcuts (`?`), light/dark themes with a circular reveal, accent colors, fully responsive, accessible                                                                                                                                                                                                                                                             |
 
 ## Architecture
 
@@ -74,6 +75,15 @@ npm run build   # type-check + production build
 npm test        # unit tests (Vitest)
 npm run lint    # ESLint
 ```
+
+**Making the admin:** sign up a normal account, confirm the email, then in the SQL Editor run
+
+```sql
+select set_config('app.admin_change', 'on', true);
+update public.profiles set role = 'admin', status = 'active', onboarded = true where email = 'admin@your-school.org';
+```
+
+(both lines in one run). Only one admin can exist, and role changes are blocked everywhere else.
 
 **Security check:** paste `supabase/tests/rls_checks.sql` into the Supabase SQL Editor and run it. It should print `ALL RLS CHECKS PASSED`. Everything it creates is rolled back.
 

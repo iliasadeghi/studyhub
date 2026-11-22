@@ -3,6 +3,7 @@
  * Keep these in sync with supabase/migrations.
  */
 import type {
+  AccountStatus,
   Booking,
   CalendarEvent,
   ClassItem,
@@ -34,6 +35,8 @@ export interface ProfileRow {
   bio: string;
   preferred_contact: ContactMethod;
   onboarded: boolean;
+  status?: AccountStatus;
+  archived_at?: string | null;
 }
 
 export interface ClassRow {
@@ -140,6 +143,8 @@ export const profileFromRow = (r: ProfileRow): Profile => ({
   bio: r.bio,
   preferredContact: r.preferred_contact,
   onboarded: r.onboarded,
+  status: r.status ?? 'active',
+  archivedAt: r.archived_at ?? null,
 });
 
 export const classFromRow = (r: ClassRow): ClassItem => ({

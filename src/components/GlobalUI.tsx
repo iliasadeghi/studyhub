@@ -6,7 +6,8 @@ import { useHotkeys } from '@/hooks/useHotkeys';
 import { messageService } from '@/services/messages';
 import { notify } from '@/services/notifications';
 import { useSettingsStore } from '@/stores/settingsStore';
-import { NAV_ITEMS } from '@/layouts/nav';
+import { navItemsFor } from '@/layouts/nav';
+import { useAuthStore } from '@/stores/authStore';
 import { TaskFormModal } from './task-form/TaskFormModal';
 import { CommandPalette } from './CommandPalette';
 import { ShortcutsModal } from './ShortcutsModal';
@@ -21,14 +22,20 @@ export function GlobalUI() {
   const shortcutsOpen = useUIStore((s) => s.shortcutsOpen);
   const { openTaskForm, setCommandOpen, setShortcutsOpen, pushToast } = useUIStore.getState();
   const anyOpen = taskFormOpen || commandOpen || shortcutsOpen;
+  const role = useAuthStore((s) => s.profile?.role);
+  const admin = role === 'admin';
 
   useHotkeys({ 'mod+k': () => setCommandOpen(!useUIStore.getState().commandOpen) });
   useHotkeys(
     {
-      n: () => openTaskForm(),
+      n: () => {
+        if (!admin) openTaskForm();
+      },
       '?': () => setShortcutsOpen(true),
       '/': () => setCommandOpen(true),
-      ...Object.fromEntries(NAV_ITEMS.map((item, i) => [String(i + 1), () => navigate(item.to)])),
+      ...Object.fromEntries(
+        navItemsFor(role).map((item, i) => [String(i + 1), () => navigate(item.to)]),
+      ),
     },
     !anyOpen,
   );

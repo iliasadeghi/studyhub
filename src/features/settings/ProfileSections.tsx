@@ -5,6 +5,7 @@ import { useAuthStore, useProfile } from '@/stores/authStore';
 import { toast } from '@/stores/uiStore';
 import { Button } from '@/components/ui/Button';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { useAccent } from '@/hooks/useTheme';
 import { useUIStore } from '@/stores/uiStore';
 import { ACCENTS } from '@/utils/colors';
 import { cn } from '@/utils/cn';
@@ -24,9 +25,10 @@ export function ProfileSection() {
   const [color, setColor] = useState<SubjectColor>(profile.avatarColor);
   const [busy, setBusy] = useState(false);
   const teacher = profile.role === 'teacher';
+  const student = profile.role === 'student';
   const dirty =
     name !== profile.fullName ||
-    (!teacher && grade !== (profile.grade ?? '10')) ||
+    (student && grade !== (profile.grade ?? '10')) ||
     bio !== profile.bio ||
     contact !== profile.preferredContact ||
     color !== profile.avatarColor;
@@ -37,7 +39,7 @@ export function ProfileSection() {
     setBusy(true);
     const ok = await useAuthStore.getState().updateProfile({
       fullName: name.trim(),
-      grade: teacher ? null : grade,
+      grade: student ? grade : null,
       bio: bio.trim(),
       preferredContact: contact,
       avatarColor: color,
@@ -53,13 +55,15 @@ export function ProfileSection() {
       description={
         teacher
           ? 'Your students see this on your profile card.'
-          : 'Your teachers see your name and color.'
+          : student
+            ? 'Your teachers see your name and color.'
+            : 'Shown in the audit log and admin pages.'
       }
     >
       <form onSubmit={(e) => void save(e)} className="space-y-5">
         <div className="flex items-center gap-4">
           <Avatar name={name || 'You'} color={color} size="xl" />
-          <div className={cn('grid flex-1 grid-cols-1 gap-4', !teacher && 'sm:grid-cols-2')}>
+          <div className={cn('grid flex-1 grid-cols-1 gap-4', student && 'sm:grid-cols-2')}>
             <Field label="Name">
               {(id) => (
                 <Input
@@ -71,7 +75,7 @@ export function ProfileSection() {
                 />
               )}
             </Field>
-            {!teacher && (
+            {student && (
               <Field label="Grade">
                 {(id) => (
                   <Select id={id} value={grade} onChange={(e) => setGrade(e.target.value)}>
@@ -119,7 +123,7 @@ export function ProfileSection() {
         <div className="flex items-center justify-between gap-3 border-t border-border pt-4">
           <p className="text-sm text-muted">
             Signed in as <span className="font-semibold text-fg">{profile.email}</span> ·{' '}
-            {teacher ? 'Teacher' : 'Student'}
+            {teacher ? 'Teacher' : student ? 'Student' : 'School admin'}
           </p>
           <Button type="submit" disabled={!dirty || busy || !name.trim()}>
             {busy ? 'Saving…' : 'Save profile'}
@@ -132,7 +136,7 @@ export function ProfileSection() {
 
 export function AppearanceSection() {
   const theme = useSettingsStore((s) => s.theme);
-  const accent = useSettingsStore((s) => s.accent);
+  const { accent, chosen, school } = useAccent();
   const update = useSettingsStore((s) => s.update);
   return (
     <SettingsSection id="appearance" title="Appearance" description="Make it yours.">
@@ -157,7 +161,7 @@ export function AppearanceSection() {
                 name="accent"
                 value={a.id}
                 checked={accent === a.id}
-                onChange={() => update({ accent: a.id as AccentColor })}
+                onChange={() => update({ accent: a.id as AccentColor, accentChosen: true })}
                 className="peer sr-only"
               />
               <span
@@ -171,6 +175,15 @@ export function AppearanceSection() {
             </label>
           ))}
         </div>
+        {chosen && school && (
+          <button
+            type="button"
+            onClick={() => update({ accentChosen: false })}
+            className="mt-3 text-xs font-semibold text-accent-text hover:underline"
+          >
+            Use the school color
+          </button>
+        )}
       </fieldset>
     </SettingsSection>
   );

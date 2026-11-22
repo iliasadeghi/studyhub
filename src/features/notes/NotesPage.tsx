@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/Button';
 import { NotesSidebar } from './NotesSidebar';
 import { NoteReader } from './NoteReader';
 import { NoteEditor } from './NoteEditor';
+import { noteBlockedReason } from '@/stores/schoolStore';
 
 function NotesHome() {
   const notes = useNoteStore((s) => s.notes);
@@ -65,6 +66,8 @@ export default function NotesPage() {
   const editing = params.get('edit') === '1' && note?.authorId === me.id;
 
   const createNote = () => {
+    const blocked = noteBlockedReason(me.role);
+    if (blocked) return toast({ title: 'Notes are off', description: blocked });
     const classId = note?.classId ?? classes[0]?.id;
     if (!classId) {
       toast({

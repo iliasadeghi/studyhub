@@ -1,8 +1,8 @@
 /* eslint-disable react-refresh/only-export-components -- route module, not hot-reloaded */
-import { lazy } from 'react';
+import { lazy, type ReactNode } from 'react';
 import { createBrowserRouter, Navigate, useParams } from 'react-router-dom';
 import { AppLayout } from '@/layouts/AppLayout';
-import { PublicOnly, RequireAuth } from '@/features/auth/guards';
+import { NotForAdmin, PublicOnly, RequireAdmin, RequireAuth } from '@/features/auth/guards';
 
 const LoginPage = lazy(() => import('@/features/auth/LoginPage'));
 const SignupPage = lazy(() => import('@/features/auth/SignupPage'));
@@ -19,6 +19,17 @@ const PeoplePage = lazy(() => import('@/features/teachers/TeachersPage'));
 const MessagesPage = lazy(() => import('@/features/messages/MessagesPage'));
 const SettingsPage = lazy(() => import('@/features/settings/SettingsPage'));
 const NotFoundPage = lazy(() => import('@/features/NotFoundPage'));
+const AdminOverviewPage = lazy(() => import('@/features/admin/AdminOverviewPage'));
+const AdminUsersPage = lazy(() => import('@/features/admin/AdminUsersPage'));
+const AdminClassesPage = lazy(() => import('@/features/admin/AdminClassesPage'));
+const AdminModerationPage = lazy(() => import('@/features/admin/AdminModerationPage'));
+const AdminSchoolPage = lazy(() => import('@/features/admin/AdminSchoolPage'));
+const AdminArchivePage = lazy(() => import('@/features/admin/AdminArchivePage'));
+const AdminAuditPage = lazy(() => import('@/features/admin/AdminAuditPage'));
+
+/** Student/teacher pages; the admin is sent to the admin console instead. */
+const member = (page: ReactNode) => <NotForAdmin>{page}</NotForAdmin>;
+const admin = (page: ReactNode) => <RequireAdmin>{page}</RequireAdmin>;
 
 /** Old /teachers/:id links now open the conversation. */
 function TeacherRedirect() {
@@ -69,18 +80,25 @@ export const router = createBrowserRouter(
         </RequireAuth>
       ),
       children: [
-        { index: true, element: <DashboardPage /> },
-        { path: 'tasks', element: <TasksPage /> },
-        { path: 'calendar', element: <CalendarPage /> },
-        { path: 'classes', element: <ClassesPage /> },
-        { path: 'classes/:classId', element: <ClassDetailPage /> },
-        { path: 'notes', element: <NotesPage /> },
-        { path: 'notes/:noteId', element: <NotesPage /> },
-        { path: 'people', element: <PeoplePage /> },
+        { index: true, element: member(<DashboardPage />) },
+        { path: 'tasks', element: member(<TasksPage />) },
+        { path: 'calendar', element: member(<CalendarPage />) },
+        { path: 'classes', element: member(<ClassesPage />) },
+        { path: 'classes/:classId', element: member(<ClassDetailPage />) },
+        { path: 'notes', element: member(<NotesPage />) },
+        { path: 'notes/:noteId', element: member(<NotesPage />) },
+        { path: 'people', element: member(<PeoplePage />) },
         { path: 'teachers', element: <Navigate to="/people" replace /> },
         { path: 'teachers/:teacherId', element: <TeacherRedirect /> },
-        { path: 'messages', element: <MessagesPage /> },
-        { path: 'messages/:contactId', element: <MessagesPage /> },
+        { path: 'messages', element: member(<MessagesPage />) },
+        { path: 'messages/:contactId', element: member(<MessagesPage />) },
+        { path: 'admin', element: admin(<AdminOverviewPage />) },
+        { path: 'admin/users', element: admin(<AdminUsersPage />) },
+        { path: 'admin/classes', element: admin(<AdminClassesPage />) },
+        { path: 'admin/moderation', element: admin(<AdminModerationPage />) },
+        { path: 'admin/school', element: admin(<AdminSchoolPage />) },
+        { path: 'admin/archive', element: admin(<AdminArchivePage />) },
+        { path: 'admin/audit', element: admin(<AdminAuditPage />) },
         { path: 'settings', element: <SettingsPage /> },
         { path: '*', element: <NotFoundPage /> },
       ],

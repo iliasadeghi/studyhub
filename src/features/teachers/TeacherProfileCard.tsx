@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/Card';
 import { Avatar } from '@/components/ui/Misc';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { useFeature } from '@/stores/schoolStore';
 
 export function OfficeHoursList({ teacher }: { teacher: Teacher }) {
   if (teacher.officeHours.length === 0)
@@ -41,6 +42,7 @@ export function TeacherProfileCard({
   onBook?: () => void;
   showMessageLink?: boolean;
 }) {
+  const booking = useFeature('office_hours');
   const primary = classes[0];
   const mailto = buildMailto({ to: teacher.email, className: primary?.name, topic: 'Question' });
 
@@ -99,7 +101,7 @@ export function TeacherProfileCard({
             <Mail className="h-4 w-4" aria-hidden /> Email teacher
           </a>
         )}
-        {onBook && teacher.officeHours.length > 0 && (
+        {onBook && booking && teacher.officeHours.length > 0 && (
           <Button
             variant="secondary"
             leftIcon={<CalendarClock className="h-4 w-4" />}

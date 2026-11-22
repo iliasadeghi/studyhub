@@ -10,13 +10,15 @@ import { useProfile } from '@/stores/authStore';
 
 export default function SettingsPage() {
   const setShortcutsOpen = useUIStore((s) => s.setShortcutsOpen);
-  const teacher = useProfile().role === 'teacher';
+  const role = useProfile().role;
+  const teacher = role === 'teacher';
+  const admin = role === 'admin';
   const SECTIONS = [
     { id: 'profile', label: 'Profile' },
     ...(teacher ? [{ id: 'office-hours', label: 'Office hours' }] : []),
     { id: 'appearance', label: 'Appearance' },
     { id: 'preferences', label: 'Preferences' },
-    { id: 'classes', label: 'Classes' },
+    ...(admin ? [] : [{ id: 'classes', label: 'Classes' }]),
     { id: 'account', label: 'Account & data' },
   ];
   return (
@@ -53,7 +55,7 @@ export default function SettingsPage() {
           {teacher && <OfficeHoursSection />}
           <AppearanceSection />
           <PreferencesSection />
-          <ClassManager />
+          {!admin && <ClassManager />}
           <DataSection />
           <p className="pb-4 text-center text-xs text-subtle">
             Theme, accent and view preferences are saved on this device.

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { useSchoolStore } from '@/stores/schoolStore';
 import { useMediaQuery } from './useMediaQuery';
 
 /** Resolved dark/light based on setting + system preference. */
@@ -10,10 +11,18 @@ export function useResolvedTheme(): 'light' | 'dark' {
   return theme;
 }
 
+/** The accent in use: your own pick, otherwise the school's color. */
+export function useAccent() {
+  const own = useSettingsStore((s) => s.accent);
+  const chosen = useSettingsStore((s) => s.accentChosen);
+  const school = useSchoolStore((s) => (s.loaded ? s.settings.accent : s.publicInfo?.accent));
+  return { accent: chosen ? own : (school ?? own), chosen, school: school ?? null };
+}
+
 /** Keeps the <html> element's class and accent attribute in sync with settings. */
 export function useApplyTheme(): void {
   const resolved = useResolvedTheme();
-  const accent = useSettingsStore((s) => s.accent);
+  const { accent } = useAccent();
 
   useEffect(() => {
     const root = document.documentElement;

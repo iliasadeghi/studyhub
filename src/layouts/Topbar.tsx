@@ -18,6 +18,7 @@ export function Topbar() {
   const name = profile.fullName || 'You';
   const avatarColor = profile.avatarColor;
   const resolved = useResolvedTheme();
+  const admin = profile.role === 'admin';
   const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 
   return (
@@ -34,7 +35,9 @@ export function Topbar() {
           aria-label="Search or jump to (command palette)"
         >
           <Search className="h-4 w-4 shrink-0" aria-hidden />
-          <span className="truncate">Search tasks, notes, people…</span>
+          <span className="truncate">
+            {admin ? 'Search or jump to…' : 'Search tasks, notes, people…'}
+          </span>
           <span className="ml-auto hidden items-center gap-1 sm:flex">
             <Kbd>{isMac ? '⌘' : 'Ctrl'}</Kbd>
             <Kbd>K</Kbd>
@@ -54,14 +57,16 @@ export function Topbar() {
               <Moon className="h-[18px] w-[18px] animate-[spin-in_0.5s_var(--ease)]" />
             )}
           </IconButton>
-          <IconButton
-            label="New task"
-            variant="soft"
-            onClick={() => openTaskForm()}
-            className="md:hidden"
-          >
-            <Plus className="h-5 w-5" />
-          </IconButton>
+          {!admin && (
+            <IconButton
+              label="New task"
+              variant="soft"
+              onClick={() => openTaskForm()}
+              className="md:hidden"
+            >
+              <Plus className="h-5 w-5" />
+            </IconButton>
+          )}
           <Menu
             items={[
               {

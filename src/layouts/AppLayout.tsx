@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { GlobalUI } from '@/components/GlobalUI';
 import { ReminderBanner } from '@/components/ReminderBanner';
+import { AnnouncementBanner } from '@/components/AnnouncementBanner';
 import { PageSkeleton } from '@/components/ui/Misc';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
@@ -43,6 +44,7 @@ export function AppLayout() {
       <Sidebar />
       <div className="md:pl-[72px] lg:pl-[248px] print:!pl-0">
         <Topbar />
+        <AnnouncementBanner />
         <ReminderBanner />
         <main
           id="main"

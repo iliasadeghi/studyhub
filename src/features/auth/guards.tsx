@@ -2,6 +2,8 @@ import type { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import { Logo } from '@/layouts/Logo';
+import { accessFor } from '@/features/admin/adminUtils';
+import { AccountStatusScreen } from './AccountStatusScreen';
 
 export function Splash() {
   return (
@@ -38,8 +40,26 @@ export function RequireAuth({
   if (status === 'signedOut' || !profile) {
     return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
   }
-  if (!profile.onboarded && !allowUnonboarded) return <Navigate to="/welcome" replace />;
-  if (profile.onboarded && allowUnonboarded) return <Navigate to="/" replace />;
+  const access = accessFor(profile);
+  if (access !== 'ok') return <AccountStatusScreen access={access} />;
+  // The admin has no first-time setup.
+  const onboarded = profile.onboarded || profile.role === 'admin';
+  if (!onboarded && !allowUnonboarded) return <Navigate to="/welcome" replace />;
+  if (onboarded && allowUnonboarded) return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
+
+/** Admin-only pages. Everyone else goes back to their dashboard. */
+export function RequireAdmin({ children }: { children: ReactNode }) {
+  const role = useAuthStore((s) => s.profile?.role);
+  if (role !== 'admin') return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
+
+/** The reverse: pages that make no sense for the admin (personal tasks, messages…). */
+export function NotForAdmin({ children }: { children: ReactNode }) {
+  const role = useAuthStore((s) => s.profile?.role);
+  if (role === 'admin') return <Navigate to="/admin" replace />;
   return <>{children}</>;
 }
 

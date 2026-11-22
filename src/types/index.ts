@@ -62,7 +62,8 @@ export interface ClassItem {
   joinCode: string;
 }
 
-export type UserRole = 'student' | 'teacher';
+export type UserRole = 'student' | 'teacher' | 'admin';
+export type AccountStatus = 'active' | 'pending' | 'suspended';
 
 /** The signed-in user's own profile row. */
 export interface Profile {
@@ -75,6 +76,8 @@ export interface Profile {
   bio: string;
   preferredContact: ContactMethod;
   onboarded: boolean;
+  status: AccountStatus;
+  archivedAt: string | null;
 }
 
 export interface OfficeHour {
@@ -163,7 +166,28 @@ export interface CalendarEvent {
 export interface UserSettings {
   theme: ThemeMode;
   accent: AccentColor;
+  /** False until the user picks an accent; until then the school's color is used */
+  accentChosen: boolean;
   defaultTaskView: TaskView;
   weekStartsOn: 0 | 1;
   notificationsEnabled: boolean;
+}
+
+export type FeatureKey =
+  'messaging' | 'student_start' | 'office_hours' | 'class_notes' | 'private_notes';
+export type AnnouncementTone = 'info' | 'success' | 'warning' | 'danger';
+export type SignupPolicy = 'open' | 'domain' | 'closed';
+
+/** School-wide settings managed by the admin. */
+export interface SchoolSettings {
+  schoolName: string;
+  announcement: string;
+  announcementTone: AnnouncementTone;
+  /** When the announcement text last changed (re-shows dismissed banners) */
+  announcementAt: string | null;
+  accent: AccentColor;
+  signupPolicy: SignupPolicy;
+  allowedDomain: string;
+  teacherApproval: boolean;
+  features: Record<FeatureKey, boolean>;
 }
